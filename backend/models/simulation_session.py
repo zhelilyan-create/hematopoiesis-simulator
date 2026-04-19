@@ -46,17 +46,55 @@ def _load_baseline() -> dict:
 
 
 def build_config(params: dict) -> dict:
-    """Merge UI flat params dict on top of the baseline YAML config."""
+    """Merge UI flat params dict on top of the baseline YAML config.
+
+    Handles every parameter the frontend can send so that UI controls
+    actually affect the simulation.  Sections applied in order:
+      division fates → division/apoptosis rates → population dynamics
+      → state evolution → state modulation → inheritance → epigenetic
+    """
     cfg = _load_baseline()
 
-    sr       = float(params.get("self_renewal_weight", 0.825))
-    hsc_asym = round(1.0 - sr - MPP_MPP_WEIGHT, 10)
-    cfg["division_fates"]["HSC"] = [
-        {"daughters": ["HSC", "HSC"], "weight": sr},
-        {"daughters": ["HSC", "MPP"], "weight": hsc_asym},
-        {"daughters": ["MPP", "MPP"], "weight": MPP_MPP_WEIGHT},
-    ]
+    # ── Division fates ────────────────────────────────────────────────────────
+    # Prefer explicit per-fate arrays (use_custom_division_fates=true);
+    # fall back to the single self_renewal_weight scalar.
+    if "division_fates_hsc" in params:
+        w0, w1, w2 = [float(x) for x in params["division_fates_hsc"]]
+        cfg["division_fates"]["HSC"] = [
+            {"daughters": ["HSC", "HSC"], "weight": w0},
+            {"daughters": ["HSC", "MPP"], "weight": w1},
+            {"daughters": ["MPP", "MPP"], "weight": w2},
+        ]
+    else:
+        sr       = float(params.get("self_renewal_weight", 0.825))
+        hsc_asym = round(1.0 - sr - MPP_MPP_WEIGHT, 10)
+        cfg["division_fates"]["HSC"] = [
+            {"daughters": ["HSC", "HSC"], "weight": sr},
+            {"daughters": ["HSC", "MPP"], "weight": hsc_asym},
+            {"daughters": ["MPP", "MPP"], "weight": MPP_MPP_WEIGHT},
+        ]
 
+    if "division_fates_mpp" in params:
+        w0, w1, w2, w3, w4 = [float(x) for x in params["division_fates_mpp"]]
+        cfg["division_fates"]["MPP"] = [
+            {"daughters": ["MPP", "MPP"], "weight": w0},
+            {"daughters": ["MPP", "CMP"], "weight": w1},
+            {"daughters": ["MPP", "CLP"], "weight": w2},
+            {"daughters": ["CMP", "CMP"], "weight": w3},
+            {"daughters": ["CLP", "CLP"], "weight": w4},
+        ]
+
+    # ── Division / apoptosis rates (per-type dicts) ───────────────────────────
+    if "division_rates" in params:
+        cfg.setdefault("division_rates", {}).update(
+            {k: float(v) for k, v in params["division_rates"].items()}
+        )
+    if "apoptosis_rates" in params:
+        cfg.setdefault("apoptosis_rates", {}).update(
+            {k: float(v) for k, v in params["apoptosis_rates"].items()}
+        )
+
+    # ── Population dynamics ───────────────────────────────────────────────────
     pd_sec = cfg.setdefault("population_dynamics", {})
     if "target_population_size"  in params: pd_sec["target_population_size"]  = int(float(params["target_population_size"]))
     if "density_gamma"           in params: pd_sec["density_gamma"]           = float(params["density_gamma"])
@@ -65,12 +103,43 @@ def build_config(params: dict) -> dict:
     if "crowding_threshold"      in params: pd_sec["crowding_threshold"]      = float(params["crowding_threshold"])
     if "crowding_apoptosis_rate" in params: pd_sec["crowding_apoptosis_rate"] = float(params["crowding_apoptosis_rate"])
 
-    # Target population toggle — when disabled, kill all density regulation
+    # Target population toggle — when disabled, zero all density regulation
     if not params.get("enable_target_population", True):
-        pd_sec["density_gamma"]   = 0.0
-        pd_sec["density_beta"]    = 0.0
-        pd_sec["niche_strength"]  = 0.0
+        pd_sec["density_gamma"]          = 0.0
+        pd_sec["density_beta"]           = 0.0
+        pd_sec["niche_strength"]         = 0.0
         pd_sec["target_population_size"] = 999_999  # effectively unlimited
+
+    # ── State evolution (lifetime dynamics) ───────────────────────────────────
+    ev_sec = cfg.setdefault("state_evolution", {})
+    if "stress_accumulation_rate" in params: ev_sec["stress_accumulation_rate"] = float(params["stress_accumulation_rate"])
+    if "stemness_drift_rate"      in params: ev_sec["stemness_drift_rate"]      = float(params["stemness_drift_rate"])
+
+    # ── State modulation weights ──────────────────────────────────────────────
+    sm_sec = cfg.setdefault("state_modulation", {})
+    for k in ("w_div_stemness", "w_div_stress", "w_div_repl",
+              "w_apo_stress",   "w_apo_repl",
+              "min_factor",     "max_factor"):
+        if k in params:
+            sm_sec[k] = float(params[k])
+
+    # ── Inheritance rules ─────────────────────────────────────────────────────
+    inh_sec = cfg.setdefault("inheritance", {})
+    if "inheritance_mode"   in params: inh_sec["mode"]                     = str(params["inheritance_mode"])
+    # Centriole-specific params
+    if "stemness_factor"    in params: inh_sec["centriole_stemness_factor"] = float(params["stemness_factor"])
+    if "stress_factor"      in params: inh_sec["centriole_stress_factor"]   = float(params["stress_factor"])
+    if "age_cap"            in params: inh_sec["centriole_age_cap"]         = int(params["age_cap"])
+    # Asymmetric-specific params
+    if "stemness_asymmetry" in params: inh_sec["stemness_asymmetry"]        = float(params["stemness_asymmetry"])
+    if "stress_asymmetry"   in params: inh_sec["stress_asymmetry"]          = float(params["stress_asymmetry"])
+
+    # ── Epigenetic memory ─────────────────────────────────────────────────────
+    epi_sec = cfg.setdefault("epigenetic", {})
+    if "epigenetic_enabled"  in params: epi_sec["enabled"]            = bool(params["epigenetic_enabled"])
+    if "inheritance_noise"   in params: epi_sec["inheritance_noise"]   = float(params["inheritance_noise"])
+    if "asymmetry_strength"  in params: epi_sec["asymmetry_strength"]  = float(params["asymmetry_strength"])
+    if "drift_rate"          in params: epi_sec["drift_rate"]          = float(params["drift_rate"])
 
     return cfg
 
