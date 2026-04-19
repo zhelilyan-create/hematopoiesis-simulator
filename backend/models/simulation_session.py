@@ -58,6 +58,7 @@ def build_config(params: dict) -> dict:
     ]
 
     pd_sec = cfg.setdefault("population_dynamics", {})
+    if "target_population_size"  in params: pd_sec["target_population_size"]  = int(float(params["target_population_size"]))
     if "density_gamma"           in params: pd_sec["density_gamma"]           = float(params["density_gamma"])
     if "density_beta"            in params: pd_sec["density_beta"]            = float(params["density_beta"])
     if "niche_strength"          in params: pd_sec["niche_strength"]          = float(params["niche_strength"])

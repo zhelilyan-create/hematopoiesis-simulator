@@ -45,6 +45,8 @@ async def start_session(body: StartRequest):
                       "crowding_threshold", "crowding_apoptosis_rate"):
                 if k in params:
                     pd[k] = float(params[k])
+            if "target_population_size" in params:
+                pd["target_population_size"] = int(float(params["target_population_size"]))
     else:
         cfg = build_config(params)
 
