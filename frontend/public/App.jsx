@@ -58,6 +58,7 @@ const ADV_DEF = {
   // G7: Epigenetic Details
   use_custom_epigenetic: false,
   inheritance_noise: 0.02, asymmetry_strength: 0.02, drift_rate: 0.0005,
+  w_div_epigenetic: 1.0,
   // G8: Lifetime Dynamics
   use_custom_lifetime: false,
   stemness_drift_rate: 0.0,
@@ -106,6 +107,7 @@ function buildConfig(b, a) {
   if (b.epigenetic_enabled && a.use_custom_epigenetic)
     Object.assign(c, {
       inheritance_noise: a.inheritance_noise, asymmetry_strength: a.asymmetry_strength, drift_rate: a.drift_rate,
+      w_div_epigenetic: a.w_div_epigenetic,
     });
   if (a.use_custom_lifetime)
     c.stemness_drift_rate = a.stemness_drift_rate;
@@ -430,6 +432,9 @@ function GrpEpigeneticDetails({ a, set, b, disabled }) {
       <Sld label="Drift Rate" hint="Return to neutral bias per step"
            value={a.drift_rate} min={0} max={0.01} step={0.0001}
            onChange={set('drift_rate')} disabled={disabled || !on || !epi}/>
+      <Sld label="Division Modulation (w_div_epi)" hint="Positive bias → suppresses division rate"
+           value={a.w_div_epigenetic} min={0} max={3} step={0.1}
+           onChange={set('w_div_epigenetic')} disabled={disabled || !on || !epi}/>
     </Accordion>
   );
 }

@@ -1,4 +1,4 @@
-"""Rate modulation by internal cell state — v0.7.
+"""Rate modulation by internal cell state — v0.13.
 
 RateModulator computes multiplicative modifiers for the three event
 types (division, differentiation, apoptosis) from a cell's InternalState.
@@ -12,11 +12,12 @@ for every weight value::
     modifier_div  = 1.0 + w_div_stemness*(stemness-0.5)
                         - w_div_stress*stress
                         - w_div_repl*division_count
+                        - w_div_epigenetic*epigenetic_bias   # v0.13
 
     modifier_diff = 1.0 - w_diff_stemness*(stemness-0.5)
                         + w_diff_stress*stress
                         + w_diff_repl*division_count
-                        + w_diff_epigenetic*epigenetic_bias   # v0.7
+                        + w_diff_epigenetic*epigenetic_bias   # v0.7 (dead — no DifferentiationEvent)
 
     modifier_apo  = 1.0 + w_apo_stress*stress
                         + w_apo_repl*division_count
@@ -27,12 +28,12 @@ Neutral-state proof
 -------------------
 Substituting stemness=0.5, stress=0.0, division_count=0, epigenetic_bias=0.0::
 
-    modifier_div  = 1.0 + w*(0.5-0.5) - w*0.0 - w*0           = 1.0  (any w)
+    modifier_div  = 1.0 + w*(0.5-0.5) - w*0.0 - w*0 - w_e*0.0 = 1.0  (any w_e)
     modifier_diff = 1.0 - w*(0.5-0.5) + w*0.0 + w*0 + w_e*0.0 = 1.0  (any w_e)
     modifier_apo  = 1.0 + w*0.0 + w*0                          = 1.0  (any w)
 
-v0.7 epigenetic term:  at ``epigenetic_bias=0.0`` the term ``w_diff_epigenetic*0.0=0``.
-At default ``w_diff_epigenetic=0.0`` the term is always 0 regardless of bias.
+v0.13 epigenetic division term: at ``epigenetic_bias=0.0`` the term is 0.
+At default ``w_div_epigenetic=0.0`` the term is always 0 regardless of bias.
 Both paths guarantee exact backward compatibility.
 
 Interpretation
@@ -40,8 +41,8 @@ Interpretation
 Higher stemness         → more division, less differentiation
 Higher stress           → less division, more differentiation, more apoptosis
 Higher divisions        → less division, more differentiation, more apoptosis
-Higher epigenetic_bias  → more differentiation  (v0.7, only when w > 0)
-Lower  epigenetic_bias  → less differentiation  (v0.7, only when w > 0)
+Higher epigenetic_bias  → less division  (v0.13, differentiation-primed cells divide less)
+Lower  epigenetic_bias  → more division  (v0.13, self-renewal-primed cells divide more)
 
 .. warning::
     All default weight values are NON-CALIBRATED placeholders.
@@ -76,6 +77,11 @@ class ModulationParams:
         Weight: stress penalty on division rate.
     w_div_repl : float
         Weight: replicative-history penalty on division rate.
+    w_div_epigenetic : float
+        Weight: epigenetic bias suppression of division rate (v0.13).
+        Positive epigenetic_bias (differentiation-primed) reduces division;
+        negative bias (self-renewal-primed) increases division.
+        At default 0.0, epigenetic_bias has no effect on division.
     w_diff_stemness : float
         Weight: stemness suppression of differentiation rate.
     w_diff_stress : float
@@ -95,12 +101,13 @@ class ModulationParams:
     w_div_stemness:       float = 0.0
     w_div_stress:         float = 0.0
     w_div_repl:           float = 0.0
+    w_div_epigenetic:     float = 0.0   # v0.13: epigenetic bias suppresses division (positive bias → less division)
     w_diff_stemness:      float = 0.0
     w_diff_stress:        float = 0.0
     w_diff_repl:          float = 0.0
     w_apo_stress:         float = 0.0
     w_apo_repl:           float = 0.0
-    w_diff_epigenetic:    float = 0.0   # v0.7: epigenetic bias on differentiation rate
+    w_diff_epigenetic:    float = 0.0   # v0.7: epigenetic bias on differentiation rate (dead in v0.9+)
     w_lineage_epigenetic: float = 0.0   # v0.7: epigenetic bias on lineage selection
     min_factor:           float = 0.1
     max_factor:           float = 5.0
@@ -135,13 +142,15 @@ class RateModulator:
         """Multiplicative modifier for the division rate.
 
         Higher stemness and lower stress/replication history → larger modifier.
+        v0.13: positive epigenetic_bias (differentiation-primed) suppresses division.
         """
         p = self._p
         raw = (
             1.0
-            + p.w_div_stemness * (state.stemness_score - 0.5)
-            - p.w_div_stress   * state.stress_score
-            - p.w_div_repl     * state.division_count
+            + p.w_div_stemness   * (state.stemness_score - 0.5)
+            - p.w_div_stress     * state.stress_score
+            - p.w_div_repl       * state.division_count
+            - p.w_div_epigenetic * state.epigenetic_bias   # v0.13
         )
         return _clamp(raw, p.min_factor, p.max_factor)
 

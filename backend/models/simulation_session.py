@@ -118,6 +118,7 @@ def build_config(params: dict) -> dict:
     # ── State modulation weights ──────────────────────────────────────────────
     sm_sec = cfg.setdefault("state_modulation", {})
     for k in ("w_div_stemness", "w_div_stress", "w_div_repl",
+              "w_div_epigenetic",
               "w_apo_stress",   "w_apo_repl",
               "min_factor",     "max_factor"):
         if k in params:
