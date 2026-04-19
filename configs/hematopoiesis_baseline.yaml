@@ -1,0 +1,202 @@
+# Hematopoiesis — v0.12 recalibrated baseline (sweep20 validated)
+# ============================================================
+# v0.9 changes: DifferentiationEvent removed.  All cell-type
+# transitions now happen through fate-driven division.
+# The `division_fates` section replaces `differentiation_rates`.
+#
+# To run:
+#   python scripts/run_sim.py --config configs/hematopoiesis_baseline.yaml --seed 42
+#
+# ============================================================
+# CAUTION: rate tables are PLACEHOLDER values, NOT calibrated.
+# Do not interpret simulation outputs as quantitative predictions.
+#
+# Simulation model: PDMP (piecewise-deterministic Markov process)
+#
+# Cell type hierarchy:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal — division_rate = 0)
+#       │   └── Erythroid   (terminal — division_rate = 0)
+#       └── CLP
+#           ├── B_cell      (terminal — division_rate = 0)
+#           └── T_cell      (terminal — division_rate = 0)
+
+initial_population:
+  HSC: 10
+
+# ---------------------------------------------------------------
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types = 0 — they cannot divide; fate not defined.
+# ---------------------------------------------------------------
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# ---------------------------------------------------------------
+# Apoptosis rates per cell type (1/h)
+#
+# v0.12 recalibration (sweep20):
+#   Progenitor rates raised so apo/div ratio is 0.4-0.5.
+#   This shifts the natural equilibrium to n ~ target WITHOUT
+#   requiring extreme density-factor suppression.
+#
+#   Previous → New   (ratio apo/div)
+#   HSC:  0.001 → 0.025   (0.02 → 0.50)
+#   MPP:  0.005 → 0.040   (0.05 → 0.40)
+#   CMP:  0.010 → 0.040   (0.10 → 0.40)
+#   CLP:  0.010 → 0.040   (0.10 → 0.40)
+#
+#   Mature cell rates unchanged — they are the apoptosis sink.
+# ---------------------------------------------------------------
+apoptosis_rates:
+  HSC:       0.025
+  MPP:       0.040
+  CMP:       0.040
+  CLP:       0.040
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020
+
+# ---------------------------------------------------------------
+# v0.9: Fate-driven division tables
+#
+# Each entry defines one possible division outcome:
+#   daughters: [type_A, type_B]   — the two daughter cell types
+#   weight:    <float>            — base probability weight (unnormalised)
+#
+# Weights are normalised at runtime (after optional niche modulation).
+# Terminal types (Myeloid, Erythroid, B_cell, T_cell) have no fates
+# because their division_rate = 0.
+#
+# Commitment strength per fate = count of daughters ≠ parent type:
+#   (HSC, HSC)   → 0  (symmetric self-renewal)
+#   (HSC, MPP)   → 1  (asymmetric, one daughter commits)
+#   (MPP, MPP)   → 2  (symmetric differentiation)
+# ---------------------------------------------------------------
+division_fates:
+  HSC:
+    # v0.12 composition fix (sweep21 baseline — sweep20 HSC%=5-7%, target 10-20%)
+    # SR weight raised: 0.70 -> 0.825  |  asymmetric: 0.20 -> 0.125  |  comm: 0.10 -> 0.05
+    - daughters: [HSC, HSC]      # symmetric self-renewal
+      weight: 0.825
+    - daughters: [HSC, MPP]      # asymmetric — one progenitor
+      weight: 0.125
+    - daughters: [MPP, MPP]      # symmetric differentiation
+      weight: 0.05
+
+  MPP:
+    - daughters: [MPP, MPP]      # symmetric self-renewal
+      weight: 0.55
+    - daughters: [MPP, CMP]      # asymmetric myeloid branch
+      weight: 0.15
+    - daughters: [MPP, CLP]      # asymmetric lymphoid branch
+      weight: 0.15
+    - daughters: [CMP, CMP]      # symmetric myeloid commitment
+      weight: 0.075
+    - daughters: [CLP, CLP]      # symmetric lymphoid commitment
+      weight: 0.075
+
+  CMP:
+    - daughters: [CMP, CMP]      # symmetric self-renewal
+      weight: 0.50
+    - daughters: [CMP, Myeloid]  # asymmetric myeloid
+      weight: 0.25
+    - daughters: [CMP, Erythroid] # asymmetric erythroid
+      weight: 0.25
+
+  CLP:
+    - daughters: [CLP, CLP]      # symmetric self-renewal
+      weight: 0.50
+    - daughters: [CLP, B_cell]   # asymmetric B-cell
+      weight: 0.25
+    - daughters: [CLP, T_cell]   # asymmetric T-cell
+      weight: 0.25
+
+# ---------------------------------------------------------------
+# State-dependent rate modulation weights  [CALIBRATED from v0.8]
+# ---------------------------------------------------------------
+state_modulation:
+  w_div_stemness:    1.0
+  w_div_stress:      0.25
+  w_div_repl:        0.005
+  w_diff_stemness:   1.0     # retained for compat; unused in v0.9
+  w_diff_stress:     0.1     # retained for compat; unused in v0.9
+  w_diff_repl:       0.005   # retained for compat; unused in v0.9
+  w_apo_stress:      1.0
+  w_apo_repl:        0.005
+  w_diff_epigenetic:    0.0
+  w_lineage_epigenetic: 0.0
+  min_factor:           0.1
+  max_factor:        5.0
+
+# ---------------------------------------------------------------
+# Inheritance rules  [CALIBRATED from v0.8]
+# ---------------------------------------------------------------
+inheritance:
+  mode: centriole
+  centriole_stemness_factor: 0.015
+  centriole_stress_factor:   0.01
+  centriole_age_cap: 10
+
+# ---------------------------------------------------------------
+# Lifetime state evolution  [CALIBRATED from v0.8]
+# ---------------------------------------------------------------
+state_evolution:
+  stress_accumulation_rate: 0.001
+  stemness_drift_rate: 0.0
+
+# ---------------------------------------------------------------
+# Epigenetic memory layer  [v0.7 safe defaults]
+# ---------------------------------------------------------------
+epigenetic:
+  enabled: true
+  inheritance_noise:  0.02
+  asymmetry_strength: 0.02
+  drift_rate:         0.0005
+
+# ---------------------------------------------------------------
+# Population dynamics: M4 (crowding apoptosis) + M6.2 (fate
+# weight niche modulation) + M6.4 (hybrid division density controller)
+#
+# niche_strength (k):
+#   modifier = exp(-k * niche * stemness * commitment)
+#   k=0 → no niche modulation
+#
+# M6.4 hybrid controller (v0.11):
+#   delta          = (target - n) / target
+#   density_factor = exp(gamma * delta) * (target / n) ** beta
+#   density_factor = clamp(density_factor, 0.01, 10.0)
+#   effective_div *= density_factor
+#
+#   gamma (exp term):  smooth recovery, symmetric
+#   beta  (PL anchor): anchors equilibrium at n=target
+#   beta=0 → pure exp (v0.10).  gamma=0 → pure PL (v0.9).
+#
+# Parameters below are PLACEHOLDER pending sweep18 calibration.
+# Updated after sweep20 (2026-04-07): gamma=4.0, beta=0.0.
+# ---------------------------------------------------------------
+population_dynamics:
+  target_population_size:   1000
+
+  # M6.4 hybrid (v0.11) — calibrated by sweep20 (v0.12 recal).
+  # Best: gamma=4.0 beta=0.0 -> mean_dev=3.6%, M4 dormant, seed variance |n|=2
+  density_gamma:            4.0   # exp term  (was 2.0)
+  density_beta:             0.0   # PL anchor  (was 1.0; pure-exp sufficient)
+
+  # M4: safety-only crowding apoptosis (v0.11).
+  # Fires ONLY above crowding_threshold * target (runaway guard).
+  # With hybrid M6.4, equilibrium should stay below threshold*target.
+  crowding_apoptosis_rate:  0.10
+  crowding_threshold:       1.3   # M4 fires above 130% of target
+
+  # M6.2: per-fate niche weight modulation.
+  niche_strength:           4.0

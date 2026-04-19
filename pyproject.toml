@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "cell-diff-sim"
+version = "0.1.0"
+description = "Hematopoiesis cell differentiation simulator using CTMC"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+vis = [
+    "matplotlib>=3.5",
+]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.1",
+    "matplotlib>=3.5",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,130 @@
+# Hematopoiesis v0.6 configuration
+# All rates are in units of 1/hour
+#
+# WARNING: all numerical values in this file are PLACEHOLDER RATES.
+# They were chosen to produce structurally plausible simulations
+# (growth, differentiation, apoptosis all occur) but are NOT derived
+# from experimental data and are NOT biologically calibrated.
+# Do not interpret outputs as quantitative biological predictions.
+#
+# v0.6 adds richer asymmetric inheritance: both stemness_score and
+# stress_score are now partitioned at division.
+#
+# New in v0.6 (inheritance section):
+#   centriole_stress_factor: stress shift per unit of centriole age.
+#   Daughter 0 (old centriole) receives parent.stress - stress_delta.
+#   Daughter 1 (new centriole) receives parent.stress + stress_delta.
+#   stress_delta = centriole_stress_factor * min(centriole_age, age_cap)
+#
+# Stress bounds convention:
+#   - stress_score is lower-bounded at 0.0; there is no upper cap.
+#   - Only daughter 0 is clamped at 0.0 (max(0.0, ...)).
+#   - Daughter 1 stress grows without bound above parent.stress.
+#
+# Removing centriole_stress_factor (or setting it to 0.0) restores
+# v0.5 behaviour exactly.
+#
+# Simulation model note (v0.5, carried forward):
+#   The model is a PDMP (piecewise-deterministic Markov process).
+#   Time-ordering (per Gillespie step):
+#     1. Propensities computed from pre-drift state.
+#     2. dt sampled.
+#     3. All cells evolved by dt.
+#     4. Selected event applied to post-drift state.
+#
+# State tree:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal)
+#       │   └── Erythroid   (terminal)
+#       └── CLP
+#           ├── B_cell      (terminal)
+#           └── T_cell      (terminal)
+
+initial_population:
+  HSC: 10
+
+# Differentiation rates: source_type -> target_type -> rate (1/h)
+differentiation_rates:
+  HSC:
+    MPP:       0.01
+  MPP:
+    CMP:       0.02
+    CLP:       0.02
+  CMP:
+    Myeloid:   0.05
+    Erythroid: 0.05
+  CLP:
+    B_cell:    0.05
+    T_cell:    0.05
+
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types are set to 0 — they cannot divide
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# Apoptosis rates per cell type (1/h)
+apoptosis_rates:
+  HSC:       0.001
+  MPP:       0.005
+  CMP:       0.010
+  CLP:       0.010
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020
+
+# State-dependent rate modulation weights (v0.2, carried forward)
+# All weights are NON-CALIBRATED placeholders.
+# See cell_diff_sim/models/rate_modulation.py for formula details.
+state_modulation:
+  w_div_stemness:  1.0
+  w_div_stress:    0.5
+  w_div_repl:      0.005
+  w_diff_stemness: 1.0
+  w_diff_stress:   0.2
+  w_diff_repl:     0.005
+  w_apo_stress:    1.0
+  w_apo_repl:      0.005
+  min_factor:      0.1
+  max_factor:      5.0
+
+# Inheritance rules (v0.6)
+#
+# CentrioleState remains the upstream mechanistic source.
+# centriole_stemness_factor: stemness shift per unit of centriole age (v0.4).
+# centriole_stress_factor:   stress shift per unit of centriole age (v0.6 NEW).
+#   Daughter 0 (old centriole) → higher stemness, LOWER stress.
+#   Daughter 1 (new centriole) → lower stemness,  HIGHER stress.
+#   Both deltas plateau at centriole_age_cap divisions.
+#
+# Values are intentionally small so that asymmetry is measurable but not
+# overwhelming.  NON-CALIBRATED placeholders.
+inheritance:
+  mode: centriole
+  centriole_stemness_factor: 0.05   # NON-CALIBRATED (unchanged from v0.5)
+  centriole_stress_factor:   0.02   # NON-CALIBRATED: small, measurable stress asymmetry (v0.6 NEW)
+  centriole_age_cap: 10             # NON-CALIBRATED (unchanged from v0.5)
+
+# Lifetime state evolution (v0.5, carried forward)
+#
+# Primary effect: stress_accumulation_rate > 0 causes stress_score to rise
+# passively during a cell's lifetime.  Through RateModulator, higher stress
+# increases apoptosis rate and decreases division rate, making event rates
+# implicitly age-dependent without any change to the Gillespie algorithm.
+#
+# Edge/debug option: stemness_drift_rate (signed).  Defaults to 0.0 and is
+# NOT the primary mechanism.
+#
+# NOTE: all values are NON-CALIBRATED placeholders.
+state_evolution:
+  stress_accumulation_rate: 0.005   # NON-CALIBRATED: stress per hour
+  stemness_drift_rate: 0.0          # NON-CALIBRATED: 0.0 = no drift (default)

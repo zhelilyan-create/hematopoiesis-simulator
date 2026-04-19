@@ -1,0 +1,99 @@
+# Hematopoiesis v0.4 configuration
+# All rates are in units of 1/hour
+#
+# WARNING: all numerical values in this file are PLACEHOLDER RATES.
+# They were chosen to produce structurally plausible simulations
+# (growth, differentiation, apoptosis all occur) but are NOT derived
+# from experimental data and are NOT biologically calibrated.
+# Do not interpret outputs as quantitative biological predictions.
+#
+# v0.4 adds the optional centriole mode to the inheritance section.
+# Remove that section (or set mode: symmetric) to get v0.2 behaviour.
+# Set mode: asymmetric to get v0.3 behaviour.
+#
+# State tree:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal)
+#       │   └── Erythroid   (terminal)
+#       └── CLP
+#           ├── B_cell      (terminal)
+#           └── T_cell      (terminal)
+
+initial_population:
+  HSC: 10
+
+# Differentiation rates: source_type -> target_type -> rate (1/h)
+differentiation_rates:
+  HSC:
+    MPP:       0.01
+  MPP:
+    CMP:       0.02
+    CLP:       0.02
+  CMP:
+    Myeloid:   0.05
+    Erythroid: 0.05
+  CLP:
+    B_cell:    0.05
+    T_cell:    0.05
+
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types are set to 0 — they cannot divide
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# Apoptosis rates per cell type (1/h)
+apoptosis_rates:
+  HSC:       0.001
+  MPP:       0.005
+  CMP:       0.010
+  CLP:       0.010
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020
+
+# State-dependent rate modulation weights (v0.2, carried forward)
+# All weights are NON-CALIBRATED placeholders.
+# See cell_diff_sim/models/rate_modulation.py for formula details.
+state_modulation:
+  w_div_stemness:  1.0
+  w_div_stress:    0.5
+  w_div_repl:      0.005
+  w_diff_stemness: 1.0
+  w_diff_stress:   0.2
+  w_diff_repl:     0.005
+  w_apo_stress:    1.0
+  w_apo_repl:      0.005
+  min_factor:      0.1
+  max_factor:      5.0
+
+# Inheritance rules (v0.4)
+# mode: symmetric    -> SymmetricInheritanceRules (same as v0.2)
+# mode: asymmetric   -> AsymmetricInheritanceRules(stemness_asymmetry)
+# mode: centriole    -> CentrioleInheritanceRules(factor, age_cap)
+#
+# Centriole mode:
+#   Daughter 0 inherits the old centriole (age + 1), higher stemness.
+#   Daughter 1 inherits the new centriole (age = 0),  lower stemness.
+#   stemness_delta = centriole_stemness_factor * min(centriole_age, centriole_age_cap)
+#   stress_score and division_count are inherited symmetrically.
+#
+# Founder cells start with centriole age = 0, so the first division is
+# always stemness-symmetric (delta = factor * min(0, cap) = 0).
+# Asymmetry only emerges from the second division onward.
+#
+# NOTE: all centriole parameters are NON-CALIBRATED placeholders.
+#
+inheritance:
+  mode: centriole
+  centriole_stemness_factor: 0.05   # NON-CALIBRATED
+  centriole_age_cap: 10             # NON-CALIBRATED

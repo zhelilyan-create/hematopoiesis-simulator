@@ -1,0 +1,82 @@
+# Hematopoiesis v0.2 configuration
+# All rates are in units of 1/hour
+#
+# WARNING: all numerical values in this file are PLACEHOLDER RATES.
+# They were chosen to produce structurally plausible simulations
+# (growth, differentiation, apoptosis all occur) but are NOT derived
+# from experimental data and are NOT biologically calibrated.
+# Do not interpret outputs as quantitative biological predictions.
+#
+# v0.2 adds the optional state_modulation section.
+# Remove that section (or set all weights to 0) to disable modulation.
+#
+# State tree:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal)
+#       │   └── Erythroid   (terminal)
+#       └── CLP
+#           ├── B_cell      (terminal)
+#           └── T_cell      (terminal)
+
+initial_population:
+  HSC: 10
+
+# Differentiation rates: source_type -> target_type -> rate (1/h)
+differentiation_rates:
+  HSC:
+    MPP:       0.01
+  MPP:
+    CMP:       0.02
+    CLP:       0.02
+  CMP:
+    Myeloid:   0.05
+    Erythroid: 0.05
+  CLP:
+    B_cell:    0.05
+    T_cell:    0.05
+
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types are set to 0 — they cannot divide
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# Apoptosis rates per cell type (1/h)
+apoptosis_rates:
+  HSC:       0.001
+  MPP:       0.005
+  CMP:       0.010
+  CLP:       0.010
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020
+
+# State-dependent rate modulation weights (v0.2)
+# All weights are NON-CALIBRATED placeholders.
+# See cell_diff_sim/models/rate_modulation.py for formula details.
+#
+# Formulas (all produce modifier = 1.0 at neutral InternalState):
+#   modifier_div  = 1 + w_div_stemness*(stemness-0.5) - w_div_stress*stress  - w_div_repl*divisions
+#   modifier_diff = 1 - w_diff_stemness*(stemness-0.5) + w_diff_stress*stress + w_diff_repl*divisions
+#   modifier_apo  = 1 + w_apo_stress*stress + w_apo_repl*divisions
+#   effective_rate = base_rate * clamp(modifier, min_factor, max_factor)
+state_modulation:
+  w_div_stemness:  1.0     # higher stemness -> more division
+  w_div_stress:    0.5     # higher stress -> less division
+  w_div_repl:      0.005   # more past divisions -> less division
+  w_diff_stemness: 1.0     # higher stemness -> less differentiation
+  w_diff_stress:   0.2     # higher stress -> more differentiation
+  w_diff_repl:     0.005   # more past divisions -> more differentiation
+  w_apo_stress:    1.0     # higher stress -> more apoptosis
+  w_apo_repl:      0.005   # more past divisions -> more apoptosis
+  min_factor:      0.1     # effective rate >= 10% of base rate
+  max_factor:      5.0     # effective rate <= 500% of base rate

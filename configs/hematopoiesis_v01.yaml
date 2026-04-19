@@ -1,0 +1,58 @@
+# Hematopoiesis v0.1 configuration
+# All rates are in units of 1/hour
+#
+# WARNING: all numerical values in this file are PLACEHOLDER RATES.
+# They were chosen to produce structurally plausible simulations
+# (growth, differentiation, apoptosis all occur) but are NOT derived
+# from experimental data and are NOT biologically calibrated.
+# Do not interpret outputs as quantitative biological predictions.
+#
+# State tree:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal)
+#       │   └── Erythroid   (terminal)
+#       └── CLP
+#           ├── B_cell      (terminal)
+#           └── T_cell      (terminal)
+
+initial_population:
+  HSC: 10
+
+# Differentiation rates: source_type -> target_type -> rate (1/h)
+differentiation_rates:
+  HSC:
+    MPP:       0.01
+  MPP:
+    CMP:       0.02
+    CLP:       0.02
+  CMP:
+    Myeloid:   0.05
+    Erythroid: 0.05
+  CLP:
+    B_cell:    0.05
+    T_cell:    0.05
+
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types are set to 0 — they cannot divide in v0.1
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# Apoptosis rates per cell type (1/h)
+apoptosis_rates:
+  HSC:       0.001
+  MPP:       0.005
+  CMP:       0.010
+  CLP:       0.010
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020

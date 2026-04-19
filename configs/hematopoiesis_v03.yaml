@@ -1,0 +1,95 @@
+# Hematopoiesis v0.3 configuration
+# All rates are in units of 1/hour
+#
+# WARNING: all numerical values in this file are PLACEHOLDER RATES.
+# They were chosen to produce structurally plausible simulations
+# (growth, differentiation, apoptosis all occur) but are NOT derived
+# from experimental data and are NOT biologically calibrated.
+# Do not interpret outputs as quantitative biological predictions.
+#
+# v0.3 adds the optional inheritance section.
+# Remove that section (or set mode: symmetric) to get v0.2 behaviour.
+#
+# State tree:
+#   HSC
+#   └── MPP
+#       ├── CMP
+#       │   ├── Myeloid     (terminal)
+#       │   └── Erythroid   (terminal)
+#       └── CLP
+#           ├── B_cell      (terminal)
+#           └── T_cell      (terminal)
+
+initial_population:
+  HSC: 10
+
+# Differentiation rates: source_type -> target_type -> rate (1/h)
+differentiation_rates:
+  HSC:
+    MPP:       0.01
+  MPP:
+    CMP:       0.02
+    CLP:       0.02
+  CMP:
+    Myeloid:   0.05
+    Erythroid: 0.05
+  CLP:
+    B_cell:    0.05
+    T_cell:    0.05
+
+# Symmetric self-renewal division rates per cell type (1/h)
+# Terminal types are set to 0 — they cannot divide
+division_rates:
+  HSC:       0.05
+  MPP:       0.10
+  CMP:       0.10
+  CLP:       0.10
+  Myeloid:   0.00
+  Erythroid: 0.00
+  B_cell:    0.00
+  T_cell:    0.00
+
+# Apoptosis rates per cell type (1/h)
+apoptosis_rates:
+  HSC:       0.001
+  MPP:       0.005
+  CMP:       0.010
+  CLP:       0.010
+  Myeloid:   0.050
+  Erythroid: 0.050
+  B_cell:    0.020
+  T_cell:    0.020
+
+# State-dependent rate modulation weights (v0.2, carried forward)
+# All weights are NON-CALIBRATED placeholders.
+# See cell_diff_sim/models/rate_modulation.py for formula details.
+state_modulation:
+  w_div_stemness:  1.0
+  w_div_stress:    0.5
+  w_div_repl:      0.005
+  w_diff_stemness: 1.0
+  w_diff_stress:   0.2
+  w_diff_repl:     0.005
+  w_apo_stress:    1.0
+  w_apo_repl:      0.005
+  min_factor:      0.1
+  max_factor:      5.0
+
+# Inheritance rules (v0.3)
+# mode: symmetric    -> SymmetricInheritanceRules (same as v0.2)
+# mode: asymmetric   -> AsymmetricInheritanceRules(stemness_asymmetry)
+#
+# Asymmetric mode:
+#   daughter 0: stemness = clamp(parent.stemness + delta, 0, 1)
+#   daughter 1: stemness = clamp(parent.stemness - delta, 0, 1)
+#   stress_score and division_count are symmetric in both modes.
+#
+# NOTE: stemness_asymmetry: 0.0 is legal (produces symmetric daughters
+# numerically) but is an edge/debug case.  For v0.2-identical behaviour
+# use mode: symmetric or omit this section entirely.
+#
+# Saturation: lineages on the same side of each division will approach
+# 0.0 or 1.0 and remain clamped there.  This is expected behaviour.
+inheritance:
+  mode: asymmetric
+  stemness_asymmetry: 0.1
