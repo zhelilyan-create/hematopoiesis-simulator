@@ -98,12 +98,13 @@ function buildConfig(b, a) {
       w_apo_stress:   a.w_apo_stress,  w_apo_repl:   a.w_apo_repl,
       min_factor: a.min_factor, max_factor: a.max_factor,
     });
-  if (a.use_custom_inheritance) {
-    if (b.inheritance_mode === 'centriole')
-      Object.assign(c, { stemness_factor: a.stemness_factor, stress_factor: a.stress_factor, age_cap: a.age_cap });
-    else if (b.inheritance_mode === 'asymmetric')
-      Object.assign(c, { stemness_asymmetry: a.stemness_asymmetry, stress_asymmetry: a.stress_asymmetry });
-  }
+  // Always send mode-specific params — sliders show correct values even when disabled.
+  // use_custom_inheritance controls slider enabled/disabled state only, not whether params are sent.
+  if (b.inheritance_mode === 'centriole')
+    Object.assign(c, { stemness_factor: a.stemness_factor, stress_factor: a.stress_factor, age_cap: a.age_cap });
+  else if (b.inheritance_mode === 'asymmetric')
+    Object.assign(c, { stemness_asymmetry: a.stemness_asymmetry, stress_asymmetry: a.stress_asymmetry });
+  // symmetric has no mode-specific params
   if (b.epigenetic_enabled && a.use_custom_epigenetic)
     Object.assign(c, {
       inheritance_noise: a.inheritance_noise, asymmetry_strength: a.asymmetry_strength, drift_rate: a.drift_rate,

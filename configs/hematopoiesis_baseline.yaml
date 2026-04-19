@@ -147,6 +147,9 @@ inheritance:
   centriole_stemness_factor: 0.015
   centriole_stress_factor:   0.01
   centriole_age_cap: 10
+  # Asymmetric mode defaults (used when mode=asymmetric without custom overrides)
+  stemness_asymmetry: 0.2
+  stress_asymmetry:   0.1
 
 # ---------------------------------------------------------------
 # Lifetime state evolution  [CALIBRATED from v0.8]
