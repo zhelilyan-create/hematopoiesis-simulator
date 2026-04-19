@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hematopoiesis Simulator v0.12</title>
+  <link rel="icon" type="image/png" href="./logo.png" sizes="any" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            hsc:       '#1f77b4',
+            mpp:       '#aec7e8',
+            cmp:       '#ff7f0e',
+            clp:       '#ffbb78',
+            myeloid:   '#2ca02c',
+            erythroid: '#98df8a',
+            bcell:     '#d62728',
+            tcell:     '#ff9896',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel standalone for JSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1f2937; }
+    ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+    /* Slider styling */
+    input[type=range] { accent-color: #3b82f6; }
+    /* Smooth transitions */
+    .panel-transition { transition: all 0.2s ease; }
+  </style>
+</head>
+<body class="dark bg-gray-900 text-gray-100 min-h-screen">
+  <div id="root"></div>
+  <script type="text/babel" src="./App.jsx?v=3"></script>
+</body>
+</html>
