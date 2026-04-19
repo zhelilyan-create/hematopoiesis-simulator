@@ -171,18 +171,22 @@ epigenetic:
 #   modifier = exp(-k * niche * stemness * commitment)
 #   k=0 → no niche modulation
 #
-# M6.4 hybrid controller (v0.11):
-#   delta          = (target - n) / target
-#   density_factor = exp(gamma * delta) * (target / n) ** beta
-#   density_factor = clamp(density_factor, 0.01, 10.0)
-#   effective_div *= density_factor
+# M6.4 ceiling controller (v0.13 — one-sided):
+#   target is a SOFT CEILING, not a bidirectional attractor.
 #
-#   gamma (exp term):  smooth recovery, symmetric
-#   beta  (PL anchor): anchors equilibrium at n=target
-#   beta=0 → pure exp (v0.10).  gamma=0 → pure PL (v0.9).
+#   n < target  →  density_factor = 1.0               (normal growth, no boost)
+#   n ≥ target  →  excess = (n - target) / target
+#                  density_factor = exp(-gamma * excess) * (target/n)^beta
+#                  density_factor = clamp(density_factor, 0.01, 1.0)
 #
-# Parameters below are PLACEHOLDER pending sweep18 calibration.
-# Updated after sweep20 (2026-04-07): gamma=4.0, beta=0.0.
+#   Applied only to self-renewal fates (M6.5); committed fates unchanged.
+#   M4 crowding apoptosis (1.3× target) is the hard-stop safety net.
+#
+#   gamma: suppression steepness above target
+#   beta:  power-law anchor term (beta=0 → pure-exp suppression)
+#
+# gamma=4.0: at 25% above target → exp(-4*0.25) ≈ 0.37× self-renewal
+#            at 50% above target → exp(-4*0.50) ≈ 0.14× self-renewal
 # ---------------------------------------------------------------
 population_dynamics:
   target_population_size:   1000

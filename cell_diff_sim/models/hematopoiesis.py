@@ -61,11 +61,19 @@ v0.12 changes from v0.11
       else:
           rate_i = base_rate_i                    # committed fates intact
 
-  The hybrid density formula is **unchanged** from v0.11::
+  The density formula (v0.13 ceiling semantics)::
 
-      delta          = (target - n) / target
-      density_factor = exp(gamma * delta) * (target / n) ** beta
-      density_factor = clamp(density_factor, 0.01, 10.0)
+      if n < target:
+          density_factor = 1.0            # below ceiling → normal growth, no boost
+      else:
+          excess          = (n - target) / target   # 0 at target, positive above
+          density_factor  = exp(-gamma * excess) * (target / n) ** beta
+          density_factor  = clamp(density_factor, 0.01, 1.0)   # never > 1.0
+
+  Target population is a **soft ceiling**, not a bidirectional attractor.
+  Below target the system grows at its natural base rate.
+  Above target self-renewal is suppressed proportionally to the excess;
+  M4 crowding apoptosis (1.3× target) provides the hard-stop safety net.
 
   This is not a parameter-tuning step; it is an architectural correction
   that aligns the density signal with its intended biological meaning:
@@ -290,16 +298,20 @@ class HematopoiesisModel(AbstractModel):
           weight_eff = base_weight × modifier
         Then weights are normalised so sum = 1; rates sum to effective_div.
 
-        M6.4 + M6.5 selective density controller (v0.12):
-          delta          = (target - n) / target
-          density_factor = exp(gamma * delta) * (target / n) ** beta
-          density_factor = clamp(density_factor, 0.01, 10.0)
+        M6.4 + M6.5 selective density controller (v0.13 ceiling semantics):
+          if n < target:
+              density_factor = 1.0          (normal growth, no artificial boost)
+          else:
+              excess         = (n - target) / target
+              density_factor = exp(-gamma * excess) * (target / n) ** beta
+              density_factor = clamp(density_factor, 0.01, 1.0)
 
           Applied per fate (NOT to effective_div globally):
             commitment == 0 -> rate_i *= density_factor   (self-renewal only)
             commitment >  0 -> rate_i unchanged            (committed fates)
 
           Preserves differentiation flux and mature-cell apoptosis sink.
+          Target population is a soft ceiling; below it growth is unrestricted.
 
         M4 safety-only crowding apoptosis (v0.10):
           Activates only when n > crowding_threshold · target.
@@ -338,22 +350,25 @@ class HematopoiesisModel(AbstractModel):
         base_div = self._division_rates.get(ct, 0.0)
         effective_div = base_div * div_factor
 
-        # M6.4: hybrid density formula (v0.11) — computed here, NOT applied
-        # globally to effective_div.  M6.5 (below) applies it per-fate.
-        #   delta          = (target - n) / target
-        #   density_factor = exp(gamma * delta) * (target / n) ** beta
-        #   clamped to [0.01, 10.0]
-        #   _n_safe guards against zero-pop divide in the power-law term.
+        # M6.4 ceiling density controller (v0.13).
+        #
+        # Semantics: target is a SOFT CEILING, not a bidirectional attractor.
+        #   n < target  →  density_factor = 1.0  (normal growth, no artificial boost)
+        #   n ≥ target  →  density_factor = exp(-gamma * excess) * (target/n)^beta
+        #                  where excess = (n - target) / target  ≥ 0
+        #                  clamped to [0.01, 1.0]  (never amplifies above 1.0)
+        #
+        # M6.5 (below) applies density_factor only to self-renewal fates (commitment==0).
         _density_factor = 1.0
         if self._target_population_size > 0 and (
             self._density_gamma > 0.0 or self._density_beta > 0.0
-        ):
+        ) and _n >= self._target_population_size:
+            _excess = (_n - self._target_population_size) / self._target_population_size
+            _f_exp  = math.exp(-self._density_gamma * _excess) if self._density_gamma > 0.0 else 1.0
             _n_safe = max(1, _n)
-            _delta  = (self._target_population_size - _n) / self._target_population_size
-            _f_exp  = math.exp(self._density_gamma * _delta) if self._density_gamma > 0.0 else 1.0
             _f_pl   = (self._target_population_size / _n_safe) ** self._density_beta \
                       if self._density_beta > 0.0 else 1.0
-            _density_factor = max(0.01, min(10.0, _f_exp * _f_pl))
+            _density_factor = max(0.01, min(1.0, _f_exp * _f_pl))
 
         if effective_div > 0.0:
             fates = self._division_fates.get(ct)
