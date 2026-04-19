@@ -31,9 +31,20 @@ def validate_params(params: dict) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
 
+    # Resolve toggle states early — used for conditional validation below.
+    crowding_on    = float(params.get("crowding_apoptosis_rate", DEFAULTS["crowding_apoptosis_rate"])) > 0
+    target_pop_on  = bool(params.get("enable_target_population", True))
+
     for key, (lo, hi) in HARD_BOUNDS.items():
         if key not in params:
             continue
+
+        # crowding_threshold is only meaningful when crowding apoptosis is active.
+        # When the mechanism is OFF (rate = 0), the threshold value is irrelevant
+        # and the frontend sends 0.0 to signal "disabled" — skip the range check.
+        if key == "crowding_threshold" and not crowding_on:
+            continue
+
         v = params[key]
         try:
             v = float(v)
@@ -69,7 +80,9 @@ def validate_params(params: dict) -> tuple[list[str], list[str]]:
             "Low self-renewal (< 0.6) with high emergency apoptosis (> 0.2) "
             "creates high extinction risk."
         )
-    if gam == 0:
+    # density_gamma = 0 warning only when the target-population toggle is ON;
+    # when the toggle is OFF the frontend intentionally sends gamma = 0.
+    if gam == 0 and target_pop_on:
         warnings.append(
             "density_gamma = 0 disables the density controller — "
             "population may grow without bound."

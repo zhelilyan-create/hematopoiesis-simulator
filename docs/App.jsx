@@ -1116,16 +1116,6 @@ function App() {
             style={{flex:1, border:'none', width:'100%'}}
             title="Help"
           />
-          <button
-            onClick={() => setShowHelp(false)}
-            style={{
-              position:'absolute', top:'14px', right:'20px',
-              background:'rgba(255,255,255,0.18)', border:'1px solid rgba(255,255,255,0.4)',
-              color:'white', borderRadius:'6px', padding:'5px 13px',
-              fontSize:'0.82rem', fontWeight:500, cursor:'pointer', zIndex:10000,
-            }}
-            title="Close help"
-          >✕ Close</button>
         </div>
       )}
     </div>
