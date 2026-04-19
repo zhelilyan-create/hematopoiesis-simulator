@@ -4,7 +4,9 @@
    ============================================================ */
 
 const { useState, useRef, useCallback, useMemo } = React;
-const API = 'http://localhost:8000';
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? `http://${window.location.hostname}:8000`
+  : 'https://hematopoiesis-simulator-api.onrender.com';
 
 /* ─── Cell metadata ──────────────────────────────────────────── */
 const CELL_COLOURS = {
