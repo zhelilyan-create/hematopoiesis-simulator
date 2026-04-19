@@ -1,0 +1,3220 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Hematopoiesis Simulator - User Manual</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#introduction" id="toc-introduction">Introduction</a></li>
+<li><a href="#part-1-hematopoiesis-and-cell-hierarchy-in-the-model"
+id="toc-part-1-hematopoiesis-and-cell-hierarchy-in-the-model">Part 1:
+Hematopoiesis and Cell Hierarchy in the Model</a>
+<ul>
+<li><a href="#what-is-hematopoiesis" id="toc-what-is-hematopoiesis">1.1
+What Is Hematopoiesis</a></li>
+<li><a href="#differentiation-tree" id="toc-differentiation-tree">1.2
+Differentiation Tree</a>
+<ul>
+<li><a href="#diagram" id="toc-diagram">Diagram</a></li>
+<li><a href="#cell-type-properties" id="toc-cell-type-properties">Cell
+Type Properties</a></li>
+</ul></li>
+<li><a href="#division-fate" id="toc-division-fate">1.3 Division
+Fate</a>
+<ul>
+<li><a href="#fate-outcomes-for-progenitor-cells"
+id="toc-fate-outcomes-for-progenitor-cells">Fate Outcomes for Progenitor
+Cells</a></li>
+</ul></li>
+<li><a href="#key-concepts" id="toc-key-concepts">1.4 Key Concepts</a>
+<ul>
+<li><a href="#stemness" id="toc-stemness">STEMNESS</a></li>
+<li><a href="#stress" id="toc-stress">STRESS</a></li>
+<li><a href="#division-fate-1" id="toc-division-fate-1">DIVISION
+FATE</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#part-2.1-core-simulation-parameters"
+id="toc-part-2.1-core-simulation-parameters">Part 2.1: Core Simulation
+Parameters</a>
+<ul>
+<li><a href="#introduction-1" id="toc-introduction-1">2.1.1
+Introduction</a></li>
+<li><a href="#parameter-overview-table"
+id="toc-parameter-overview-table">2.1.2 Parameter Overview
+Table</a></li>
+<li><a href="#parameter-details" id="toc-parameter-details">2.1.3
+Parameter Details</a></li>
+<li><a href="#recommended-parameter-combinations"
+id="toc-recommended-parameter-combinations">2.1.4 Recommended Parameter
+Combinations</a></li>
+</ul></li>
+<li><a href="#part-2.2-control-mechanisms-advanced-parameters"
+id="toc-part-2.2-control-mechanisms-advanced-parameters">Part 2.2:
+Control Mechanisms (Advanced Parameters)</a>
+<ul>
+<li><a href="#introduction-2" id="toc-introduction-2">2.2.1
+Introduction</a></li>
+<li><a href="#mechanisms-overview" id="toc-mechanisms-overview">2.2.2
+Mechanisms Overview</a></li>
+<li><a href="#mechanism-1-population-regulation-m6.4"
+id="toc-mechanism-1-population-regulation-m6.4">2.2.3 Mechanism 1 —
+Population Regulation (M6.4)</a></li>
+<li><a href="#mechanism-2-niche-modulation-m6.2"
+id="toc-mechanism-2-niche-modulation-m6.2">2.2.4 Mechanism 2 — Niche
+Modulation (M6.2)</a></li>
+<li><a href="#mechanism-3-crowding-apoptosis-m4"
+id="toc-mechanism-3-crowding-apoptosis-m4">2.2.5 Mechanism 3 — Crowding
+Apoptosis (M4)</a></li>
+<li><a href="#how-all-three-work-together"
+id="toc-how-all-three-work-together">2.2.6 How All Three Work
+Together</a></li>
+<li><a href="#recommended-combinations"
+id="toc-recommended-combinations">2.2.7 Recommended
+Combinations</a></li>
+</ul></li>
+<li><a href="#part-2.3-division-apoptosis-rates"
+id="toc-part-2.3-division-apoptosis-rates">Part 2.3: Division &amp;
+Apoptosis Rates</a>
+<ul>
+<li><a href="#introduction-3" id="toc-introduction-3">2.3.1
+Introduction</a></li>
+<li><a href="#full-rate-table" id="toc-full-rate-table">2.3.2 Full Rate
+Table</a></li>
+<li><a href="#interpreting-the-rates"
+id="toc-interpreting-the-rates">2.3.3 Interpreting the Rates</a></li>
+<li><a href="#location-in-ui-how-to-modify"
+id="toc-location-in-ui-how-to-modify">2.3.4 Location in UI &amp; How to
+Modify</a></li>
+<li><a href="#change-examples-expected-effects"
+id="toc-change-examples-expected-effects">2.3.5 Change Examples &amp;
+Expected Effects</a></li>
+<li><a href="#recommended-scenarios"
+id="toc-recommended-scenarios">2.3.6 Recommended Scenarios</a></li>
+</ul></li>
+<li><a href="#part-2.4-additional-advanced-parameters"
+id="toc-part-2.4-additional-advanced-parameters">Part 2.4: Additional
+Advanced Parameters</a>
+<ul>
+<li><a href="#introduction-4" id="toc-introduction-4">2.4.1
+Introduction</a></li>
+<li><a href="#state-modulation" id="toc-state-modulation">2.4.2 State
+Modulation</a></li>
+<li><a href="#inheritance-details" id="toc-inheritance-details">2.4.3
+Inheritance Details</a></li>
+<li><a href="#epigenetic-details" id="toc-epigenetic-details">2.4.4
+Epigenetic Details</a></li>
+<li><a href="#lifetime-dynamics" id="toc-lifetime-dynamics">2.4.5
+Lifetime Dynamics</a></li>
+<li><a href="#quick-reference-summary"
+id="toc-quick-reference-summary">2.4.6 Quick Reference Summary</a>
+<ul>
+<li><a href="#parameter-importance-at-a-glance"
+id="toc-parameter-importance-at-a-glance">Parameter importance at a
+glance</a></li>
+<li><a href="#recipe-for-beginners" id="toc-recipe-for-beginners">Recipe
+for beginners</a></li>
+<li><a href="#recipe-for-advanced-users"
+id="toc-recipe-for-advanced-users">Recipe for advanced users</a></li>
+</ul></li>
+<li><a href="#division-fate-weights" id="toc-division-fate-weights">2.5
+Division Fate Weights</a>
+<ul>
+<li><a href="#introduction-5" id="toc-introduction-5">2.5.1
+Introduction</a></li>
+<li><a href="#the-three-fate-outcomes"
+id="toc-the-three-fate-outcomes">2.5.2 The Three Fate Outcomes</a></li>
+<li><a href="#default-fate-weights-by-cell-type"
+id="toc-default-fate-weights-by-cell-type">2.5.3 Default Fate Weights by
+Cell Type</a></li>
+<li><a href="#how-changing-fate-weights-affects-the-system"
+id="toc-how-changing-fate-weights-affects-the-system">2.5.4 How Changing
+Fate Weights Affects the System</a></li>
+<li><a href="#recommended-scenarios-1"
+id="toc-recommended-scenarios-1">2.5.5 Recommended Scenarios</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#part-3.1-model-limitations"
+id="toc-part-3.1-model-limitations">Part 3.1: Model Limitations</a>
+<ul>
+<li><a href="#introduction-6" id="toc-introduction-6">3.1.1
+Introduction</a></li>
+<li><a href="#limitations-overview" id="toc-limitations-overview">3.1.2
+Limitations Overview</a></li>
+<li><a href="#summary-what-the-model-does-well-vs.-poorly"
+id="toc-summary-what-the-model-does-well-vs.-poorly">3.1.3 Summary: What
+the Model Does Well vs. Poorly</a>
+<ul>
+<li><a href="#the-model-works-well-for"
+id="toc-the-model-works-well-for">✅ The model works well for:</a></li>
+<li><a href="#the-model-does-not-work-well-for"
+id="toc-the-model-does-not-work-well-for">❌ The model does not work
+well for:</a></li>
+<li><a href="#practical-examples-when-limitations-bite"
+id="toc-practical-examples-when-limitations-bite">Practical Examples:
+When Limitations Bite</a></li>
+</ul></li>
+<li><a href="#when-to-trust-the-results"
+id="toc-when-to-trust-the-results">3.1.4 When to Trust the Results</a>
+<ul>
+<li><a href="#trust-the-results-when" id="toc-trust-the-results-when">✅
+Trust the results when:</a></li>
+<li><a href="#do-not-trust-the-results-when"
+id="toc-do-not-trust-the-results-when">❌ Do not trust the results
+when:</a></li>
+<li><a href="#the-golden-rule" id="toc-the-golden-rule">The golden
+rule</a></li>
+</ul></li>
+<li><a href="#possible-future-improvements"
+id="toc-possible-future-improvements">3.1.5 Possible Future
+Improvements</a></li>
+<li><a href="#end-of-part-3.1-model-limitations"
+id="toc-end-of-part-3.1-model-limitations"><em>End of Part 3.1 — Model
+Limitations</em></a></li>
+<li><a href="#part-3.2-reading-the-simulator-output"
+id="toc-part-3.2-reading-the-simulator-output">Part 3.2: Reading the
+Simulator Output</a>
+<ul>
+<li><a href="#overview" id="toc-overview">3.2.1 Overview</a></li>
+<li><a href="#chart-descriptions" id="toc-chart-descriptions">3.2.2
+Chart Descriptions</a></li>
+<li><a href="#common-patterns-and-what-they-mean"
+id="toc-common-patterns-and-what-they-mean">3.2.3 Common Patterns and
+What They Mean</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#appendix-glossary" id="toc-appendix-glossary">Appendix:
+Glossary</a></li>
+</ul>
+</nav>
+<h1 id="introduction">Introduction</h1>
+<p>This document is the user manual for the hematopoiesis simulator — an
+interactive, browser-based tool that models how blood cells are produced
+in the bone marrow.</p>
+<p>The simulator lets you observe how a small pool of stem cells (HSC)
+divides, differentiates, and maintains a stable population of millions
+of specialised blood cells. You can adjust dozens of parameters, toggle
+regulatory mechanisms on and off, and watch how the system responds in
+real time.</p>
+<p><strong>What this document covers:</strong></p>
+<ul>
+<li>Part 1: the biology behind the model — cell types, differentiation,
+and the key concepts used throughout.</li>
+<li>Part 2: every parameter in the simulator, organised by panel (Basic
+Settings, then Advanced Settings groups).</li>
+<li>Part 3: the model’s known limitations and when not to trust its
+results.</li>
+</ul>
+<p><strong>Who this is for:</strong> anyone using the simulator — no
+specialist background in biology or mathematics is required. Technical
+terms are explained when first introduced, and a glossary is provided at
+the end of the document.</p>
+<p><strong>How to read it:</strong> first-time users should read Part 1
+and Part 2.1, then run the simulator once with all defaults. After that,
+read the remaining sections in any order depending on what you want to
+investigate.</p>
+<hr />
+<p>Contents</p>
+<p>Part 1: Hematopoiesis and Cell Hierarchy in the Model 1.1 What Is
+Hematopoiesis 1.2 Differentiation Tree 1.2.1 Diagram 1.2.2 Cell Type
+Properties 1.3 Division Fate 1.4 Key Concepts</p>
+<p>Part 2.1: Core Simulation Parameters 2.1.1 Introduction 2.1.2
+Parameter Overview Table 2.1.3 Parameter Details (Parameters 1–6) 2.1.4
+Recommended Parameter Combinations (4 scenarios)</p>
+<p>Part 2.2: Control Mechanisms (Advanced Parameters) 2.2.1 Introduction
+2.2.2 Mechanisms Overview 2.2.3 Mechanism 1 — Population Regulation
+(M6.4) 2.2.4 Mechanism 2 — Niche Modulation (M6.2) 2.2.5 Mechanism 3 —
+Crowding Apoptosis (M4) 2.2.6 How All Three Work Together 2.2.7
+Recommended Combinations (5 scenarios)</p>
+<p>Part 2.3: Division &amp; Apoptosis Rates 2.3.1 Introduction 2.3.2
+Full Rate Table 2.3.3 Interpreting the Rates 2.3.4 Location in UI &amp;
+How to Modify 2.3.5 Change Examples &amp; Expected Effects (3 examples)
+2.3.6 Recommended Scenarios (6 scenarios)</p>
+<p>Part 2.4: Additional Advanced Parameters 2.4.1 Introduction 2.4.2
+State Modulation 2.4.3 Inheritance Details 2.4.4 Epigenetic Details
+2.4.5 Lifetime Dynamics 2.4.6 Quick Reference Summary</p>
+<p>2.5 Division Fate Weights 2.5.1 Introduction 2.5.2 The Three Fate
+Outcomes 2.5.3 Default Fate Weights by Cell Type 2.5.4 How Changing Fate
+Weights Affects the System 2.5.5 Recommended Scenarios (4 scenarios)</p>
+<p>Part 3.1: Model Limitations 3.1.1 Introduction 3.1.2 Limitations
+Overview (10 limitations) 3.1.3 Summary: What the Model Does Well
+vs. Poorly 3.1.4 When to Trust the Results 3.1.5 Possible Future
+Improvements</p>
+<p>Part 3.2: Reading the Simulator Output 3.2.1 Overview 3.2.2 Chart
+Descriptions 3.2.3 Common Patterns and What They Mean</p>
+<p>Appendix: Glossary</p>
+<hr />
+<h1 id="part-1-hematopoiesis-and-cell-hierarchy-in-the-model">Part 1:
+Hematopoiesis and Cell Hierarchy in the Model</h1>
+<hr />
+<h2 id="what-is-hematopoiesis">1.1 What Is Hematopoiesis</h2>
+<p>Hematopoiesis is the continuous process by which the body produces
+blood cells. It takes place primarily in the <strong>bone
+marrow</strong>, where a small pool of stem cells generates billions of
+new cells every day. This renewal is essential because blood cells are
+short-lived — in biological reality, red blood cells survive ~120 days,
+platelets ~10 days, and most white blood cells only hours to days. The
+simulator uses compressed timescales to keep runs tractable: model hours
+do not map 1-to-1 onto real time, and cell lifespans in the simulator
+are proportionally shorter. The process is hierarchical: a few highly
+potent <strong>stem cells (HSC)</strong> sit at the top and
+progressively give rise to more specialized, less flexible
+descendants.</p>
+<blockquote>
+<p>💡 <strong>Analogy:</strong> Hematopoiesis is a factory. A handful of
+stem cells at the center keep dividing and differentiating, sending
+specialized workers (red cells, immune cells, platelets) into the
+bloodstream around the clock.</p>
+</blockquote>
+<hr />
+<h2 id="differentiation-tree">1.2 Differentiation Tree</h2>
+<h3 id="diagram">Diagram</h3>
+<pre><code>                            HSC
+                      (Stem Cells)
+                            │
+                            │  differentiation
+                            │
+                           MPP
+                   (Multipotent Progenitors)
+                          /   \
+                         /     \
+                       CMP     CLP
+                  (Myeloid   (Lymphoid
+                  Progenitor) Progenitor)
+                   /     \       /     \
+                  /       \     /       \
+             Myeloid  Erythroid  B_cell  T_cell
+           (Neutrophils)(Red cells)(B-cells)(T-cells)</code></pre>
+<p><strong>Key rule:</strong> Differentiation is
+<strong>one-way</strong> — a cell can only move down the tree, never
+back up.</p>
+<hr />
+<h3 id="cell-type-properties">Cell Type Properties</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 13%" />
+<col style="width: 18%" />
+<col style="width: 19%" />
+<col style="width: 12%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Type</th>
+<th>Stemness</th>
+<th>Division (1/h)</th>
+<th>Apoptosis (1/h)</th>
+<th>Lifespan</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC</td>
+<td>0.8 – 1.0</td>
+<td>0.05</td>
+<td>0.025</td>
+<td>Months</td>
+<td>Stem cell reservoir</td>
+</tr>
+<tr>
+<td>MPP</td>
+<td>0.4 – 0.6</td>
+<td>0.10</td>
+<td>0.040</td>
+<td>Days</td>
+<td>Multipotent transit</td>
+</tr>
+<tr>
+<td>CMP</td>
+<td>0.2 – 0.3</td>
+<td>0.10</td>
+<td>0.040</td>
+<td>Days</td>
+<td>Myeloid lineage</td>
+</tr>
+<tr>
+<td>CLP</td>
+<td>0.2 – 0.3</td>
+<td>0.10</td>
+<td>0.040</td>
+<td>Days</td>
+<td>Lymphoid lineage</td>
+</tr>
+<tr>
+<td>Myeloid</td>
+<td>0.0 – 0.1</td>
+<td>0.00</td>
+<td>0.050</td>
+<td>1–2 days</td>
+<td>Immune defense</td>
+</tr>
+<tr>
+<td>Erythroid</td>
+<td>0.0 – 0.1</td>
+<td>0.00</td>
+<td>0.050</td>
+<td>1–2 days</td>
+<td>Oxygen transport</td>
+</tr>
+<tr>
+<td>B_cell</td>
+<td>0.0 – 0.05</td>
+<td>0.00</td>
+<td>0.020</td>
+<td>Weeks</td>
+<td>Antibody production</td>
+</tr>
+<tr>
+<td>T_cell</td>
+<td>0.0 – 0.05</td>
+<td>0.00</td>
+<td>0.020</td>
+<td>Weeks</td>
+<td>Adaptive immunity</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Legend:</strong> - <strong>Stemness (0–1):</strong> capacity
+for sustained self-renewal (1.0 = maximum, 0 = none) - <strong>Division
+rate:</strong> average divisions per hour - <strong>Apoptosis
+rate:</strong> average programmed death events per hour -
+<strong>Terminal cells</strong> (Myeloid, Erythroid, B/T cell) do
+<strong>not</strong> divide (Division = 0)</p>
+<hr />
+<h2 id="division-fate">1.3 Division Fate</h2>
+<p>When an HSC divides, it probabilistically “chooses” one of three
+outcomes:</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 16%" />
+<col style="width: 62%" />
+</colgroup>
+<thead>
+<tr>
+<th>Division Type</th>
+<th>Probability</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Self-renewal</td>
+<td>82.5 %</td>
+<td>1 HSC → 2 identical HSCs <em>(pool grows by 1)</em></td>
+</tr>
+<tr>
+<td>Asymmetric</td>
+<td>12.5 %</td>
+<td>1 HSC → 1 HSC + 1 MPP <em>(one stays, one departs)</em></td>
+</tr>
+<tr>
+<td>Commitment</td>
+<td>5.0 %</td>
+<td>1 HSC → 2 MPPs <em>(both daughters differentiate)</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sum: 82.5% + 12.5% + 5.0% = 100% ✓</strong></p>
+<ul>
+<li><strong>Self-renewal</strong> — maintains the stem cell pool over
+time</li>
+<li><strong>Asymmetric</strong> — balanced output: replenishes the pool
+while feeding downstream lineages</li>
+<li><strong>Commitment</strong> — drives active differentiation; the HSC
+“sacrifices” itself for production</li>
+</ul>
+<p>The fate is chosen stochastically at each division, making the
+system’s behavior inherently variable across runs.</p>
+<p>Progenitor cells (MPP, CMP, CLP) follow the same fate logic but with
+different default probabilities weighted toward commitment — they are
+designed to differentiate, not self-renew. Their fate weights can be
+customised in the Advanced Settings under Division Fates.</p>
+<h3 id="fate-outcomes-for-progenitor-cells">Fate Outcomes for Progenitor
+Cells</h3>
+<p><strong>MPP Division Fates:</strong> - <strong>Self-renewal:</strong>
+1 MPP → 2 identical MPPs (pool grows by 1) -
+<strong>Asymmetric:</strong> 1 MPP → 1 MPP + 1 (CMP or CLP) —
+probabilistically chosen 50/50 - <strong>Commitment:</strong> 1 MPP → 2
+CMPs or 2 CLPs — probabilistically chosen to differentiate</p>
+<p><strong>CMP Division Fates:</strong> - <strong>Self-renewal:</strong>
+1 CMP → 2 identical CMPs (pool grows by 1) -
+<strong>Asymmetric:</strong> 1 CMP → 1 CMP + 1 Myeloid (or Erythroid) -
+<strong>Commitment:</strong> 1 CMP → 2 Myeloid (or Erythroid) cells</p>
+<p><strong>CLP Division Fates:</strong> - <strong>Self-renewal:</strong>
+1 CLP → 2 identical CLPs (pool grows by 1) -
+<strong>Asymmetric:</strong> 1 CLP → 1 CLP + 1 (B_cell or T_cell) —
+probabilistically chosen 50/50 - <strong>Commitment:</strong> 1 CLP → 2
+B_cells or 2 T_cells — probabilistically chosen</p>
+<p><strong>Key difference from HSC:</strong> Progenitors are weighted
+toward commitment (higher probability of differentiation) rather than
+self-renewal. This ensures rapid amplification of terminal cell types
+while limiting progenitor pool expansion.</p>
+<p>The probabilities shown above are the default starting values. They
+can be adjusted in the Advanced Settings panel. Changing them shifts the
+balance between maintaining the stem cell pool and producing downstream
+lineages — see Section 2.5 (Division Fates) for details. → See Section
+2.5 (Division Fate Weights) for the full parameter reference and how to
+adjust these values in the simulator. —</p>
+<h2 id="key-concepts">1.4 Key Concepts</h2>
+<h3 id="stemness">STEMNESS</h3>
+<pre><code>Scale: 0.0 (fully mature) ◄────────────► 1.0 (fully stem)
+
+├─ HSC       (0.8–1.0)  Long-lived, slow aging, high division capacity
+├─ MPP       (0.4–0.6)  Several divisions, then disappear
+└─ Terminal  (0.0–0.1)  No further division, rapid death
+
+Affects   → division rate, differentiation probability
+Changes   → inherited from parent cell or decreases with cell age</code></pre>
+<h3 id="stress">STRESS</h3>
+<pre><code>Scale: 0.0 (fresh) ──────────────────► ∞ (heavily aged)
+
+├─ Represents: accumulated damage from repeated divisions
+├─ High stress → division rate    ↓  (up to −60%, governed by w_div_stress in Advanced Settings → State Modulation)
+├─ High stress → apoptosis rate   ↑  (up to +60%, governed by w_apo_stress in Advanced Settings → State Modulation)
+└─ Grows by:  stress_accumulation_rate per hour (default 0.001)
+→ See Section 2.4.2 (State Modulation) for the parameters that control how strongly stress affects division and apoptosis rates.
+
+Meaning: models cellular aging and replicative exhaustion</code></pre>
+<h3 id="division-fate-1">DIVISION FATE</h3>
+<pre><code>At each division, the cell stochastically &quot;decides&quot; its fate:
+
+├─ Symmetric renewal  → both daughters = parent type
+├─ Asymmetric         → one daughter = parent, one = new type
+├─ Commitment         → both daughters become progenitors
+
+This choice regulates the long-term balance of the system.</code></pre>
+<hr />
+<p><em>End of Part 1 — Hematopoiesis and Cell Hierarchy in the
+Model</em></p>
+<h1 id="part-2.1-core-simulation-parameters">Part 2.1: Core Simulation
+Parameters</h1>
+<hr />
+<h2 id="introduction-1">2.1.1 Introduction</h2>
+<p>The six core parameters are located in the <strong>left
+panel</strong> of the simulator under <strong>Basic Settings</strong> —
+they are the first controls you see at the top of the page. These
+parameters govern the fundamental behavior of the simulation. All
+remaining options are tucked away in the collapsible
+<strong>Advanced</strong> section and are optional.</p>
+<hr />
+<h2 id="parameter-overview-table">2.1.2 Parameter Overview Table</h2>
+<table>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 19%" />
+<col style="width: 16%" />
+<col style="width: 12%" />
+<col style="width: 21%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>UI Element</th>
+<th>What It Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Seed</strong></td>
+<td><code>0</code></td>
+<td>0 – 999 999</td>
+<td>Text input <em>(row 1)</em></td>
+<td><code>0</code> = random seed (different results each run); any other
+number = fixed seed (reproducible results)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Duration</strong> <em>(hours)</em></td>
+<td><code>100 h</code></td>
+<td>10 – 1000 h, step 0.1</td>
+<td>Text input + slider <em>(row 2)</em></td>
+<td>Total simulation time in hours. Longer runs produce more data points
+and smoother curves.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Target Population</strong></td>
+<td><code>1000</code></td>
+<td>100 – 10 000</td>
+<td>Text input + <strong>Enable toggle</strong> <em>(row 3)</em></td>
+<td>Desired population size. <strong>Toggle ON</strong> → system
+self-regulates toward this number. <strong>Toggle OFF</strong> →
+population grows freely.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Inheritance Mode</strong></td>
+<td><code>Centriole</code></td>
+<td>3 options</td>
+<td>Dropdown <em>(row 4)</em></td>
+<td>How properties are passed from parent to daughter cells. Options:
+<em>Centriole</em>, <em>Symmetric</em>, <em>Asymmetric</em>.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Stress Accumulation Rate</strong> <em>(1/h)</em></td>
+<td><code>0.001</code></td>
+<td>0.0 – 0.01</td>
+<td>Slider <em>(row 5)</em></td>
+<td>Rate at which cells accumulate aging damage per hour. Higher values
+= faster cellular aging.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Epigenetic Memory</strong></td>
+<td><code>ON</code></td>
+<td>ON / OFF</td>
+<td>Toggle <em>(row 6)</em></td>
+<td>Whether daughter cells inherit a “memory” of their parent’s fate. ON
+= more stable lineages; OFF = fully random decisions.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="parameter-details">2.1.3 Parameter Details</h2>
+<h4 id="parameter-1-seed">Parameter 1 — Seed</h4>
+<p>Controls the random number generator used throughout the
+simulation.</p>
+<ul>
+<li><strong>Seed = 0</strong> — a new random seed is generated on every
+run, producing different outcomes each time. Use this to explore the
+typical range of system behavior.</li>
+<li><strong>Seed = 42</strong> (or any fixed number) — the same sequence
+of random events is replayed on every run. Use this to reproduce and
+share a specific result.</li>
+</ul>
+<blockquote>
+<p>💡 <em>Found an interesting run? Note the seed shown after
+simulation, set it here, and re-run to get the exact same
+outcome.</em></p>
+</blockquote>
+<hr />
+<h4 id="parameter-2-duration-hours">Parameter 2 — Duration (hours)</h4>
+<p>Sets how many simulated hours the model runs.</p>
+<table>
+<thead>
+<tr>
+<th>Duration</th>
+<th>What You’ll See</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10 h (min)</td>
+<td>Only the initial growth phase</td>
+</tr>
+<tr>
+<td>100 h (default)</td>
+<td>Full dynamics + equilibrium plateau</td>
+</tr>
+<tr>
+<td>1000 h (max)</td>
+<td>Long-term stability and aging effects</td>
+</tr>
+</tbody>
+</table>
+<p>Longer durations also produce more chart data points, resulting in
+smoother plotted lines.</p>
+<hr />
+<h4 id="parameter-3-target-population">Parameter 3 — Target
+Population</h4>
+<p>Defines the homeostatic population size the system tries to
+maintain.</p>
+<ul>
+<li>The <strong>“Enable Target Population” toggle</strong> sits directly
+above the input field and must be <strong>ON</strong> for the value to
+take effect.</li>
+<li><strong>Toggle ON</strong> — the density-based regulation module
+(M6.4) actively steers the population:
+<ul>
+<li>Below target → division rate increases</li>
+<li>Above target → division rate decreases</li>
+</ul></li>
+<li><strong>Toggle OFF</strong> — the target is ignored and the
+population grows exponentially without constraint.</li>
+</ul>
+<p>Common values: <code>100</code> (small), <code>1000</code> (normal),
+<code>5000</code> (large).</p>
+<hr />
+<h4 id="parameter-4-inheritance-mode">Parameter 4 — Inheritance
+Mode</h4>
+<p>Determines how a daughter cell inherits properties (stemness, fate
+bias) from its parent at division.</p>
+<table>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 38%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+<th>Use When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Centriole</strong> <em>(default)</em></td>
+<td>Young centriole → high stemness; old centriole → low stemness.
+Biologically grounded.</td>
+<td>General use — most realistic</td>
+</tr>
+<tr>
+<td><strong>Symmetric</strong></td>
+<td>Both daughters are identical copies of the parent</td>
+<td>Simplified baseline runs</td>
+</tr>
+<tr>
+<td><strong>Asymmetric</strong></td>
+<td>Explicit asymmetry: one daughter is “old”, one is “young”</td>
+<td>Experimental / research</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="parameter-5-stress-accumulation-rate-1h">Parameter 5 — Stress
+Accumulation Rate (1/h)</h4>
+<p>Controls how quickly cells accumulate replicative stress (aging
+damage) over time.</p>
+<table>
+<thead>
+<tr>
+<th>Rate</th>
+<th>Effect over 100 h</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0.000</code></td>
+<td>Stress stays at 0</td>
+<td>Cells never age — unrealistic</td>
+</tr>
+<tr>
+<td><code>0.001</code> <em>(default)</em></td>
+<td>Stress ≈ 0.1</td>
+<td>Slow, normal aging</td>
+</tr>
+<tr>
+<td><code>0.005</code></td>
+<td>Stress ≈ 0.5</td>
+<td>Accelerated aging — degradation visible</td>
+</tr>
+<tr>
+<td><code>0.010</code> (max)</td>
+<td>Stress ≈ 1.0</td>
+<td>Fast burnout — system deteriorates</td>
+</tr>
+</tbody>
+</table>
+<p>High stress → slower division rate (up to −60%) + faster apoptosis
+(up to +60%).</p>
+<p>⚠️ <strong>Important note:</strong> The
+<code>stress_accumulation_rate</code> parameter also appears in Advanced
+Settings → Lifetime Dynamics (Section 2.4.5). <strong>Use only ONE
+location.</strong> The Basic Settings value here is recommended for most
+users — it is simpler and more intuitive. Only change it in Lifetime
+Dynamics if you need to override this value for a specific experiment,
+but do not set both simultaneously.</p>
+<hr />
+<h4 id="parameter-6-epigenetic-memory">Parameter 6 — Epigenetic
+Memory</h4>
+<p>Enables or disables epigenetic inheritance of fate decisions.</p>
+<ul>
+<li><strong>ON (default)</strong> — daughters carry a memory bias toward
+their parent’s division fate, adding stability and lineage consistency.
+Fine-tunable via <code>inheritance_noise</code> and
+<code>asymmetry_strength</code> in the Advanced section.</li>
+<li><strong>OFF</strong> — every fate decision is drawn purely at
+random, independently of the parent. Results in a simpler but noisier
+model.</li>
+</ul>
+<hr />
+<h2 id="recommended-parameter-combinations">2.1.4 Recommended Parameter
+Combinations</h2>
+<h4 id="scenario-1-normal-hematopoiesis-starting-point">Scenario 1 —
+“Normal Hematopoiesis” (starting point)</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Seed</td>
+<td><code>0</code> <em>(random)</em></td>
+</tr>
+<tr>
+<td>Duration</td>
+<td><code>100 h</code></td>
+</tr>
+<tr>
+<td>Target Population</td>
+<td><code>1000</code>, Enable = <strong>ON</strong></td>
+</tr>
+<tr>
+<td>Inheritance Mode</td>
+<td><code>Centriole</code></td>
+</tr>
+<tr>
+<td>Stress Rate</td>
+<td><code>0.001</code></td>
+</tr>
+<tr>
+<td>Epigenetic Memory</td>
+<td><strong>ON</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> system reaches a stable equilibrium
+around 1 000 cells.</p>
+<hr />
+<h4 id="scenario-2-reproducible-run">Scenario 2 — “Reproducible
+Run”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Seed</td>
+<td><code>42</code> <em>(or any fixed number)</em></td>
+</tr>
+<tr>
+<td>All others</td>
+<td>Same as Scenario 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> identical output on every run —
+useful for sharing or debugging.</p>
+<hr />
+<h4 id="scenario-3-studying-cellular-aging">Scenario 3 — “Studying
+Cellular Aging”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Seed</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td>Duration</td>
+<td><code>200 h</code> <em>(longer to see the effect)</em></td>
+</tr>
+<tr>
+<td>Stress Rate</td>
+<td><code>0.005</code> <em>(above default)</em></td>
+</tr>
+<tr>
+<td>All others</td>
+<td>Default</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> visible population degradation over
+time as stress accumulates.</p>
+<hr />
+<h4 id="scenario-4-unconstrained-growth">Scenario 4 — “Unconstrained
+Growth”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Target Population</td>
+<td>Enable = <strong>OFF</strong></td>
+</tr>
+<tr>
+<td>All others</td>
+<td>Default</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> exponential growth with no
+homeostatic ceiling.</p>
+<hr />
+<p><em>End of Part 2.1 — Core Simulation Parameters</em></p>
+<h1 id="part-2.2-control-mechanisms-advanced-parameters">Part 2.2:
+Control Mechanisms (Advanced Parameters)</h1>
+<hr />
+<h2 id="introduction-2">2.2.1 Introduction</h2>
+<p>The <strong>Advanced Settings</strong> panel contains three key
+regulatory mechanisms that govern system homeostasis. Each mechanism can
+be independently enabled or disabled with its own toggle, and its
+behavior can be fine-tuned via dedicated sliders. Together they form a
+layered control system that keeps the cell population stable and
+biologically realistic.</p>
+<hr />
+<h2 id="mechanisms-overview">2.2.2 Mechanisms Overview</h2>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 27%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Default</th>
+<th>UI Type</th>
+<th>Location in UI</th>
+<th>What It Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Population Regulation</strong> (M6.4)</td>
+<td>γ = 4.0, β = 0.0</td>
+<td>Toggle + 2 sliders</td>
+<td>Advanced → “📊 Population Regulation”</td>
+<td>Primary homeostatic regulator — speeds up or slows down division
+based on current vs. target population</td>
+</tr>
+<tr>
+<td><strong>Niche Modulation</strong> (M6.2)</td>
+<td>k = 4.0</td>
+<td>Toggle + 1 slider</td>
+<td>Advanced → “🎯 Niche Modulation”</td>
+<td>Suppresses commitment (differentiation) when HSCs are scarce,
+protecting the stem cell pool</td>
+</tr>
+<tr>
+<td><strong>Crowding Apoptosis</strong> (M4)</td>
+<td>threshold = 1.3, rate = 0.1</td>
+<td>Toggle + 2 sliders</td>
+<td>Advanced → “🚨 Crowding Apoptosis”</td>
+<td>Safety valve — triggers enhanced apoptosis if population exceeds the
+crowding threshold</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="mechanism-1-population-regulation-m6.4">2.2.3 Mechanism 1 —
+Population Regulation (M6.4)</h2>
+<p><strong>What it is:</strong> The primary homeostatic regulator. It
+continuously compares current cell count to the Target Population and
+adjusts division rates accordingly.</p>
+<p><strong>How it works:</strong> - Current &lt; target → division
+accelerates (system grows toward target) - Current = target → no change
+(system is balanced) - Current &gt; target → division decelerates
+(system contracts toward target)</p>
+<p><strong>Formula:</strong></p>
+<pre><code>density_factor = exp(γ × (target − current) / target)
+effective_division_rate = base_rate × density_factor</code></pre>
+<p><strong>Worked examples</strong> (target = 1000, γ = 4.0):</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 32%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Current</th>
+<th>Ratio</th>
+<th>density_factor</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deficit</td>
+<td>500</td>
+<td>+0.5</td>
+<td>exp(2.0) ≈ <strong>7.4×</strong></td>
+<td>Division accelerates 7.4×</td>
+</tr>
+<tr>
+<td>Balanced</td>
+<td>1000</td>
+<td>0</td>
+<td>exp(0) = <strong>1.0×</strong></td>
+<td>No change</td>
+</tr>
+<tr>
+<td>Overcrowded</td>
+<td>1500</td>
+<td>−0.5</td>
+<td>exp(−2.0) ≈ <strong>0.14×</strong></td>
+<td>Division slows to ~14% of normal</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters:</strong></p>
+<p><em><code>density_gamma</code> (γ)</em> | Value | Effect | |——-|——–|
+| <code>0</code> | No regulation — factor is always 1.0 | |
+<code>4.0</code> <em>(default)</em> | Moderate sensitivity — recommended
+| | <code>10</code> | High sensitivity — very fast recovery |</p>
+<p><em><code>density_beta</code> (β)</em> — Default <code>0.0</code>.
+Secondary dampening term; leave at default.</p>
+<p><strong>Why it matters:</strong> Without M6.4, the system grows
+unconstrained. With it, the population naturally converges to the target
+from any starting point, mimicking the feedback loops present in real
+bone marrow.</p>
+<hr />
+<h2 id="mechanism-2-niche-modulation-m6.2">2.2.4 Mechanism 2 — Niche
+Modulation (M6.2)</h2>
+<p><strong>What it is:</strong> A signal from the bone marrow
+microenvironment (the “niche”) that suppresses HSC commitment when the
+stem cell pool is depleted.</p>
+<p><strong>How it works:</strong> - When cell count is low → niche
+signal is strong → commitment probability is suppressed → HSCs are
+preserved - When cell count is normal → niche signal is neutral →
+commitment proceeds as usual - When cell count is high → niche signal
+may promote commitment → differentiation is encouraged</p>
+<p><strong>Formula:</strong></p>
+<pre><code>niche_signal = (target − current) / target
+modifier_commitment = exp(−k × niche_signal × stemness)
+p_commitment  ×=  modifier_commitment</code></pre>
+<p><strong>Worked examples</strong> (target = 1000, k = 4.0, stemness =
+0.8):</p>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 13%" />
+<col style="width: 21%" />
+<col style="width: 15%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Current</th>
+<th>niche_signal</th>
+<th>modifier</th>
+<th>Effect on commitment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Low HSC</td>
+<td>500</td>
+<td>+0.5</td>
+<td>exp(−1.6) ≈ <strong>0.20</strong></td>
+<td>Commitment probability reduced to 20% of baseline (80% suppression)
+— HSCs preserved</td>
+</tr>
+<tr>
+<td>Normal</td>
+<td>1000</td>
+<td>0</td>
+<td>exp(0) = <strong>1.0</strong></td>
+<td>No change</td>
+</tr>
+<tr>
+<td>Overcrowded</td>
+<td>1500</td>
+<td>−0.5</td>
+<td>exp(+1.6) ≈ <strong>4.95</strong></td>
+<td>Commitment promoted (capped internally)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameter:</strong></p>
+<p><em><code>niche_strength</code> (k)</em> | Value | Effect | |——-|——–|
+| <code>0</code> | Niche has no influence — commitment always proceeds
+freely | | <code>4.0</code> <em>(default)</em> | Good HSC protection —
+recommended | | <code>10</code> | Very strong niche — very hard to lose
+HSCs |</p>
+<p><strong>Why it matters:</strong> The niche is a well-documented
+biological reality (osteoblasts, megakaryocytes, and endothelial cells
+all participate). Toggling M6.2 off lets you study what happens to the
+HSC pool in a “niche-free” environment.</p>
+<hr />
+<h2 id="mechanism-3-crowding-apoptosis-m4">2.2.5 Mechanism 3 — Crowding
+Apoptosis (M4)</h2>
+<p><strong>What it is:</strong> A safety valve that activates only when
+the population significantly exceeds the target — a last-resort
+mechanism in case M6.4 and M6.2 are insufficient.</p>
+<p><strong>How it works:</strong> - While population ≤ threshold ×
+target → M4 is silent - Once population &gt; threshold × target → extra
+apoptosis rate is added to all cells</p>
+<p><strong>Formula:</strong></p>
+<pre><code>if (current / target) &gt; crowding_threshold:
+    apoptosis_rate += crowding_apoptosis_rate
+else:
+    no extra apoptosis</code></pre>
+<p><strong>Worked examples</strong> (target = 1000, threshold = 1.3,
+rate = 0.1):</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 19%" />
+<col style="width: 15%" />
+<col style="width: 26%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Current</th>
+<th>Ratio</th>
+<th>M4 active?</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal</td>
+<td>1000</td>
+<td>1.0</td>
+<td>❌ No</td>
+<td>Standard apoptosis only</td>
+</tr>
+<tr>
+<td>At threshold</td>
+<td>1300</td>
+<td>1.3</td>
+<td>✅ Yes</td>
+<td>+0.1/h apoptosis added</td>
+</tr>
+<tr>
+<td>Out of control</td>
+<td>2000</td>
+<td>2.0</td>
+<td>✅ Yes</td>
+<td>+0.1/h — rapid population decline</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameters:</strong></p>
+<p><em><code>crowding_threshold</code></em> | Value | Triggers at |
+Sensitivity | |——-|————-|————-| | <code>1.0</code> | 100% of target |
+Immediate — very tight | | <code>1.3</code> <em>(default)</em> | 130% of
+target | Normal tolerance | | <code>2.0</code> | 200% of target | Only
+extreme overcrowding | | <code>3.0</code> | 300% of target | Rarely
+triggers |</p>
+<p><em><code>crowding_apoptosis_rate</code></em> | Value | Effect |
+|——-|——–| | <code>0.0</code> | M4 has no effect even when triggered | |
+<code>0.1</code> <em>(default)</em> | Moderate extra apoptosis | |
+<code>0.5</code> | Aggressive — population drops fast | |
+<code>1.0</code> | Extreme — near-collapse response |</p>
+<p><strong>Why it matters:</strong> Acts as a biological analog to
+contact inhibition. Guarantees the simulation cannot produce runaway
+exponential growth regardless of other parameter settings.</p>
+<hr />
+<h2 id="how-all-three-work-together">2.2.6 How All Three Work
+Together</h2>
+<p>The three mechanisms form a <strong>three-layer defense
+system:</strong></p>
+<pre><code>LAYER 1 — Population Regulation (M6.4)   [Primary regulator]
+  └─ Watches total population size
+  └─ Accelerates / decelerates division continuously
+  └─ Keeps system near target at all times
+
+LAYER 2 — Niche Modulation (M6.2)        [HSC guardian]
+  └─ Watches HSC availability
+  └─ Suppresses commitment when HSCs are scarce
+  └─ Accelerates recovery by preserving the stem cell reservoir
+
+LAYER 3 — Crowding Apoptosis (M4)        [Emergency brake]
+  └─ Dormant under normal conditions
+  └─ Activates only above crowding threshold
+  └─ Hard ceiling — guarantees no population explosion</code></pre>
+<p><strong>Example: Recovery after 90% depletion</strong> (target =
+1000)</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 22%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr>
+<th>Time</th>
+<th>Population</th>
+<th>M6.4 response</th>
+<th>M6.2 response</th>
+<th>M4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>t = 0 h</td>
+<td>100</td>
+<td>density_factor ≈ 37× — division accelerates ~37× — rapid recovery
+begins</td>
+<td>niche_signal = 0.9 → commitment suppressed ~5×</td>
+<td>Dormant</td>
+</tr>
+<tr>
+<td>t = 50 h</td>
+<td>800</td>
+<td>density_factor ≈ 1.2 — gently accelerating</td>
+<td>niche_signal = 0.2 → commitment nearly normal</td>
+<td>Dormant</td>
+</tr>
+<tr>
+<td>t = 100 h</td>
+<td>1000</td>
+<td>density_factor = 1.0 — balanced</td>
+<td>niche_signal = 0 → normal</td>
+<td>Dormant</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> Full recovery in ~100 hours. ✓</p>
+<hr />
+<h2 id="recommended-combinations">2.2.7 Recommended Combinations</h2>
+<h4
+id="scenario-1-normal-system-default-recommended-starting-point">Scenario
+1 — “Normal System” <em>(default — recommended starting point)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population Regulation</td>
+<td>ON, γ = 4.0</td>
+</tr>
+<tr>
+<td>Niche Modulation</td>
+<td>ON, k = 4.0</td>
+</tr>
+<tr>
+<td>Crowding Apoptosis</td>
+<td>ON, threshold = 1.3, rate = 0.1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> Stable, realistic hematopoiesis
+with natural equilibrium.</p>
+<hr />
+<h4 id="scenario-2-no-regulation-uncontrolled-baseline">Scenario 2 — “No
+Regulation” <em>(uncontrolled baseline)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population Regulation</td>
+<td>OFF (γ = 0)</td>
+</tr>
+<tr>
+<td>Niche Modulation</td>
+<td>OFF (k = 0)</td>
+</tr>
+<tr>
+<td>Crowding Apoptosis</td>
+<td>OFF (rate = 0)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> Exponential, unconstrained growth —
+useful as a control condition.</p>
+<hr />
+<h4 id="scenario-3-regulation-without-niche-hsc-depleting-run">Scenario
+3 — “Regulation Without Niche” <em>(HSC-depleting run)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population Regulation</td>
+<td>ON, γ = 4.0</td>
+</tr>
+<tr>
+<td>Niche Modulation</td>
+<td>OFF (k = 0)</td>
+</tr>
+<tr>
+<td>Crowding Apoptosis</td>
+<td>ON, rate = 0.1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> Population size is controlled, but
+HSCs differentiate more aggressively and the stem cell pool shrinks over
+time.</p>
+<hr />
+<h4 id="scenario-4-hard-mode-maximum-stability">Scenario 4 — “Hard Mode”
+<em>(maximum stability)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population Regulation</td>
+<td>ON, γ = 10.0</td>
+</tr>
+<tr>
+<td>Niche Modulation</td>
+<td>ON, k = 10.0</td>
+</tr>
+<tr>
+<td>Crowding Apoptosis</td>
+<td>ON, threshold = 1.0, rate = 0.5</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> Extremely stable system — very
+difficult to perturb. Good for stress-testing the model.</p>
+<hr />
+<h4 id="scenario-5-fast-recovery-post-depletion-resilience">Scenario 5 —
+“Fast Recovery” <em>(post-depletion resilience)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population Regulation</td>
+<td>ON, γ = 8.0</td>
+</tr>
+<tr>
+<td>Niche Modulation</td>
+<td>ON, k = 6.0</td>
+</tr>
+<tr>
+<td>Crowding Apoptosis</td>
+<td>ON, threshold = 1.2, rate = 0.2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected result:</strong> Rapid rebound after a population
+drop — useful for studying bone marrow recovery dynamics.</p>
+<hr />
+<p><em>End of Part 2.2 — Control Mechanisms</em></p>
+<h1 id="part-2.3-division-apoptosis-rates">Part 2.3: Division &amp;
+Apoptosis Rates</h1>
+<hr />
+<h2 id="introduction-3">2.3.1 Introduction</h2>
+<p>Every cell type has its own division rate (how often it divides) and
+apoptosis rate (how quickly it dies). By default the simulator uses
+values are pre-calibrated and represent the recommended defaults. These
+can be overridden in <strong>Advanced Settings</strong> by enabling the
+<strong>“Use custom division rates”</strong> and <strong>“Use custom
+apoptosis rates”</strong> toggles — useful for research and sensitivity
+analysis, but leave them off unless you have a specific reason to change
+them.</p>
+<hr />
+<h2 id="full-rate-table">2.3.2 Full Rate Table</h2>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 18%" />
+<col style="width: 12%" />
+<col style="width: 18%" />
+<col style="width: 12%" />
+<col style="width: 20%" />
+<col style="width: 6%" />
+</colgroup>
+<thead>
+<tr>
+<th>Cell Type</th>
+<th>Division Rate (1/h)</th>
+<th>Avg. interval</th>
+<th>Apoptosis Rate (1/h)</th>
+<th>Avg. interval</th>
+<th>Approximate lifespan</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HSC</strong></td>
+<td>0.05</td>
+<td>1 div / 20 h</td>
+<td>0.025</td>
+<td>1 death / 40 h</td>
+<td>Months</td>
+<td>Long-lived stem cells</td>
+</tr>
+<tr>
+<td><strong>MPP</strong></td>
+<td>0.10</td>
+<td>1 div / 10 h</td>
+<td>0.040</td>
+<td>1 death / 25 h</td>
+<td>Days</td>
+<td>A few divisions, then gone</td>
+</tr>
+<tr>
+<td><strong>CMP</strong></td>
+<td>0.10</td>
+<td>1 div / 10 h</td>
+<td>0.040</td>
+<td>1 death / 25 h</td>
+<td>Days</td>
+<td>Myeloid-committed progenitor</td>
+</tr>
+<tr>
+<td><strong>CLP</strong></td>
+<td>0.10</td>
+<td>1 div / 10 h</td>
+<td>0.040</td>
+<td>1 death / 25 h</td>
+<td>Days</td>
+<td>Lymphoid-committed progenitor</td>
+</tr>
+<tr>
+<td><strong>Myeloid</strong></td>
+<td><strong>0.00</strong></td>
+<td>⛔ Never</td>
+<td>0.050</td>
+<td>1 death / 20 h</td>
+<td>1–2 days</td>
+<td>Terminal — does not divide</td>
+</tr>
+<tr>
+<td><strong>Erythroid</strong></td>
+<td><strong>0.00</strong></td>
+<td>⛔ Never</td>
+<td>0.050</td>
+<td>1 death / 20 h</td>
+<td>1–2 days</td>
+<td>Terminal — does not divide</td>
+</tr>
+<tr>
+<td><strong>B_cell</strong></td>
+<td><strong>0.00</strong></td>
+<td>⛔ Never</td>
+<td>0.020</td>
+<td>1 death / 50 h</td>
+<td>Weeks</td>
+<td>Terminal — longest-lived terminal</td>
+</tr>
+<tr>
+<td><strong>T_cell</strong></td>
+<td><strong>0.00</strong></td>
+<td>⛔ Never</td>
+<td>0.020</td>
+<td>1 death / 50 h</td>
+<td>Weeks</td>
+<td>Terminal — longest-lived terminal</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Terminal cells (Myeloid, Erythroid, B_cell, T_cell) never
+divide.</strong> Their division rate is locked at 0.00 and cannot be
+modified in the UI.</p>
+</blockquote>
+<hr />
+<h2 id="interpreting-the-rates">2.3.3 Interpreting the Rates</h2>
+<p><strong>Unit:</strong> <code>[1/h]</code> = events per hour. The mean
+time between events = <code>1 ÷ rate</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Rate</th>
+<th>Mean interval</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.05</td>
+<td>20 h</td>
+<td>One event every ~20 hours</td>
+</tr>
+<tr>
+<td>0.10</td>
+<td>10 h</td>
+<td>One event every ~10 hours</td>
+</tr>
+<tr>
+<td>0.020</td>
+<td>50 h</td>
+<td>One event every ~50 hours</td>
+</tr>
+<tr>
+<td>0.050</td>
+<td>20 h</td>
+<td>One event every ~20 hours</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Per cell type:</strong></p>
+<p><strong>HSC</strong> (div = 0.05, apo = 0.025) — Divides slowly
+(every 20 h), dies even more slowly (every 40 h). Net effect: HSCs
+accumulate over time and persist for months. Their purpose is long-term
+reservoir maintenance.</p>
+<p><strong>MPP / CMP / CLP</strong> (div = 0.10, apo = 0.040) — Divide
+twice as fast as HSCs. They undergo a few rounds of division before
+differentiating or dying. Purpose: rapid amplification of the downstream
+lineages.</p>
+<p><strong>Myeloid / Erythroid</strong> (div = 0.00, apo = 0.050) —
+Terminally differentiated; they never divide. They die every ~20 hours,
+so the system must continuously replenish them via progenitors. High
+turnover, short service life.</p>
+<p><strong>B_cell / T_cell</strong> (div = 0.00, apo = 0.020) — Also
+terminally differentiated, but die more slowly (every ~50 h). They
+persist for weeks, providing sustained immune coverage with lower
+replacement demand.</p>
+<hr />
+<h2 id="location-in-ui-how-to-modify">2.3.4 Location in UI &amp; How to
+Modify</h2>
+<p><strong>Division rates:</strong></p>
+<pre><code>Advanced Settings → &quot;⚡ Division Rates&quot;
+  ├─ Toggle: &quot;Use custom division rates&quot;  [default: OFF]
+  │    OFF → model uses calibrated defaults (recommended)
+  │    ON  → sliders appear for each dividing cell type
+  └─ Sliders (visible when ON):
+       HSC   : 0.01 – 0.20 [1/h]
+       MPP   : 0.05 – 0.30 [1/h]
+       CMP   : 0.05 – 0.30 [1/h]
+       CLP   : 0.05 – 0.30 [1/h]
+       Terminal cells: NOT shown (locked at 0.00)</code></pre>
+<p><strong>Apoptosis rates:</strong></p>
+<pre><code>Advanced Settings → &quot;💀 Apoptosis Rates&quot;
+  ├─ Toggle: &quot;Use custom apoptosis rates&quot;  [default: OFF]
+  │    OFF → model uses calibrated defaults (recommended)
+  │    ON  → sliders appear for all 8 cell types
+  └─ Sliders (visible when ON):
+       HSC      : 0.01 – 0.10 [1/h]
+       MPP      : 0.01 – 0.15 [1/h]
+       CMP      : 0.01 – 0.15 [1/h]
+       CLP      : 0.01 – 0.15 [1/h]
+       Myeloid  : 0.01 – 0.15 [1/h]
+       Erythroid: 0.01 – 0.15 [1/h]
+       B_cell   : 0.01 – 0.10 [1/h]
+       T_cell   : 0.01 – 0.10 [1/h]</code></pre>
+<p><strong>When to change rates:</strong></p>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal simulation</td>
+<td>Leave at defaults — values are pre-calibrated and represent the
+recommended defaults</td>
+</tr>
+<tr>
+<td>Sensitivity analysis</td>
+<td>Change one parameter at a time and note results</td>
+</tr>
+<tr>
+<td>Modeling a disease state</td>
+<td>Adjust specific rates to reflect the condition</td>
+</tr>
+<tr>
+<td>Comparing lineages</td>
+<td>Use asymmetric rates between CMP and CLP</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🔴 <strong>Caution:</strong> Changing rates affects the entire
+system. Always document what you changed so results can be reproduced
+(use a fixed Seed).</p>
+</blockquote>
+<hr />
+<h2 id="change-examples-expected-effects">2.3.5 Change Examples &amp;
+Expected Effects</h2>
+<h4
+id="example-1-increase-hsc-division-rate-faster-stem-cell-cycling">Example
+1 — Increase HSC division rate (faster stem cell cycling)</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC division</td>
+<td>0.05 (1 div / 20 h)</td>
+<td><strong>0.10</strong> (1 div / 10 h)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effect:</strong> HSCs divide twice as fast → the HSC pool
+grows larger → downstream progenitors receive more input → overall
+population grows faster and at a higher plateau. On the population
+chart: steeper initial slope.</p>
+<hr />
+<h4
+id="example-2-increase-apoptosis-rate-of-terminal-cells-higher-turnover">Example
+2 — Increase apoptosis rate of terminal cells (higher turnover)</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Myeloid apoptosis</td>
+<td>0.050 (live ~20 h)</td>
+<td><strong>0.10</strong> (live ~10 h)</td>
+</tr>
+<tr>
+<td>Erythroid apoptosis</td>
+<td>0.050 (live ~20 h)</td>
+<td><strong>0.10</strong> (live ~10 h)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effect:</strong> Myeloid and erythroid cells die twice as
+fast → constant deficit of terminal cells → M6.4 detects deficit and
+accelerates CMP division to compensate → on the cell-type composition
+chart: Myeloid and Erythroid bands narrow, CMP band widens.</p>
+<hr />
+<h4
+id="example-3-decrease-mpp-division-rate-progenitor-bottleneck">Example
+3 — Decrease MPP division rate (progenitor bottleneck)</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MPP division</td>
+<td>0.10 (1 div / 10 h)</td>
+<td><strong>0.05</strong> (1 div / 20 h)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effect:</strong> MPPs amplify more slowly → CMP and CLP
+receive fewer cells → all terminal lineages become deficient → total
+population drops toward a lower equilibrium. On the population chart:
+lower steady-state plateau; terminal cell counts decline
+progressively.</p>
+<hr />
+<h2 id="recommended-scenarios">2.3.6 Recommended Scenarios</h2>
+<h4 id="scenario-1-calibrated-default-recommended">Scenario 1 —
+“Calibrated Default” <em>(recommended)</em></h4>
+<p>All rates at table defaults. System reaches a stable, realistic
+equilibrium.</p>
+<hr />
+<h4 id="scenario-2-fast-growth">Scenario 2 — “Fast Growth”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC division</td>
+<td>0.05 → <strong>0.10</strong></td>
+</tr>
+<tr>
+<td>MPP division</td>
+<td>0.10 → <strong>0.15</strong></td>
+</tr>
+<tr>
+<td>CMP division</td>
+<td>0.10 → <strong>0.15</strong></td>
+</tr>
+<tr>
+<td>CLP division</td>
+<td>0.10 → <strong>0.15</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> System grows rapidly and stabilizes at a
+larger population.</p>
+<hr />
+<h4 id="scenario-3-hsc-exhaustion">Scenario 3 — “HSC Exhaustion”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC division</td>
+<td>0.05 → <strong>0.02</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> HSC pool depletes gradually; the system
+becomes unstable as progenitor input decreases over time.</p>
+<hr />
+<h4 id="scenario-4-high-demand-elevated-terminal-turnover">Scenario 4 —
+“High Demand” <em>(elevated terminal turnover)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Myeloid apoptosis</td>
+<td>0.050 → <strong>0.10</strong></td>
+</tr>
+<tr>
+<td>Erythroid apoptosis</td>
+<td>0.050 → <strong>0.10</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> Short-lived terminal cells require twice the
+production rate; progenitor activity increases to compensate.</p>
+<hr />
+<h4 id="scenario-5-long-lived-immune-cells">Scenario 5 — “Long-lived
+Immune Cells”</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B_cell apoptosis</td>
+<td>0.020 → <strong>0.010</strong></td>
+</tr>
+<tr>
+<td>T_cell apoptosis</td>
+<td>0.020 → <strong>0.010</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> B and T cells persist twice as long and
+accumulate steadily; their share of the composition chart expands over
+time.</p>
+<hr />
+<h4 id="scenario-6-asymmetric-lineages-research">Scenario 6 —
+“Asymmetric Lineages” <em>(research)</em></h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CMP division</td>
+<td>0.10 → <strong>0.05</strong></td>
+</tr>
+<tr>
+<td>CLP division</td>
+<td>0.10 → <strong>0.15</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Result:</strong> Myeloid lineage is slower, lymphoid lineage
+is faster — the cell-type balance shifts toward B/T cells, useful for
+studying lineage competition.</p>
+<hr />
+<p><em>End of Part 2.3 — Division &amp; Apoptosis Rates</em></p>
+<h1 id="part-2.4-additional-advanced-parameters">Part 2.4: Additional
+Advanced Parameters</h1>
+<hr />
+<h2 id="introduction-4">2.4.1 Introduction</h2>
+<p>Beyond division rates, apoptosis rates, and control mechanisms, there
+are four more Advanced parameter groups that govern how a cell’s
+internal state (stemness, stress) influences its behavior. These are
+intended for experienced users. All four are <strong>OFF by
+default</strong>, and the pre-calibrated values are applied
+automatically — leave them off unless you have a specific research
+question in mind.</p>
+<hr />
+<h2 id="state-modulation">2.4.2 State Modulation</h2>
+<p><strong>Location:</strong> Advanced Settings → “📈 State Modulation”
+<strong>Toggle:</strong> “Customize state modulation” <em>(default:
+OFF)</em></p>
+<p>When <strong>ON</strong>, seven sliders appear that control how
+stemness and accumulated stress modify division and apoptosis rates.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>What It Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>w_div_stemness</code></td>
+<td>1.0</td>
+<td>0 – 5</td>
+<td>How strongly stemness <strong>accelerates</strong> division.
+<code>0</code> = no effect; <code>1</code> = moderate; <code>5</code> =
+very strong</td>
+</tr>
+<tr>
+<td><code>w_div_stress</code></td>
+<td>0.25</td>
+<td>0 – 1</td>
+<td>How strongly stress <strong>slows</strong> division. <code>0</code>
+= stress has no effect; <code>1</code> = very strong slowdown</td>
+</tr>
+<tr>
+<td><code>w_apo_stress</code></td>
+<td>1.0</td>
+<td>0 – 5</td>
+<td>How strongly stress <strong>accelerates</strong> apoptosis.
+<code>0</code> = no effect; <code>1</code> = moderate; <code>5</code> =
+very strong</td>
+</tr>
+<tr>
+<td><code>min_factor</code></td>
+<td>0.1</td>
+<td>0.01 – 0.5</td>
+<td>Floor multiplier — rate can never fall below
+<code>base × 0.1</code>. Prevents population collapse</td>
+</tr>
+<tr>
+<td><code>max_factor</code></td>
+<td>5.0</td>
+<td>2 – 20</td>
+<td>Ceiling multiplier — rate can never rise above
+<code>base × 5.0</code>. Prevents runaway growth</td>
+</tr>
+<tr>
+<td><code>w_div_repl</code></td>
+<td>0.005</td>
+<td>0 – 0.05</td>
+<td>How cumulative division count <strong>slows</strong> further
+division <em>(optional; rarely changed)</em></td>
+</tr>
+<tr>
+<td><code>w_apo_repl</code></td>
+<td>0.005</td>
+<td>0 – 0.05</td>
+<td>How cumulative division count <strong>accelerates</strong> apoptosis
+<em>(optional; rarely changed)</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>How it works:</strong></p>
+<pre><code>Division modifier  = exp( w_div_stemness × stemness ) × exp( −w_div_stress × stress )
+Apoptosis modifier = exp( w_apo_stress   × stress   )
+
+Both modifiers are clamped to [min_factor, max_factor]</code></pre>
+<p><em>Example — HSC with stemness = 0.9, stress = 0.5 (defaults):</em>
+- Division modifier = exp(1.0 × 0.9) × exp(−0.25 × 0.5) ≈ 2.46 × 0.88 ≈
+<strong>2.16×</strong> - Apoptosis modifier = exp(1.0 × 0.5) ≈
+<strong>1.65×</strong> - <strong>Clamping:</strong> 2.16× is within
+[min=0.1×, max=5.0×], so no adjustment applied. - <strong>Final
+rates:</strong> Division ×2.16, Apoptosis ×1.65</p>
+<p><em>Example with high stress — HSC with stemness = 0.9, stress =
+2.0:</em> - Division modifier = exp(1.0 × 0.9) × exp(−0.25 × 2.0) ≈ 2.46
+× 0.61 ≈ <strong>1.50×</strong> - Apoptosis modifier = exp(1.0 × 2.0) ≈
+7.39× (but clamped to max=5.0×) - <strong>Clamping:</strong> Apoptosis
+7.39× exceeds [max=5.0×], so clamped downward. - <strong>Final
+rates:</strong> Division ×1.50, Apoptosis ×5.0 (capped)</p>
+<p>This demonstrates why the clamps (min_factor, max_factor) are
+essential — they prevent extreme cellular behavior from overwhelming the
+system.</p>
+<p><strong>When to change:</strong> Leave OFF for normal use. Enable to
+investigate questions like <em>“What if stress had no effect on
+division?”</em> (set <code>w_div_stress = 0</code>) or <em>“What if
+stemness is less important?”</em> (lower
+<code>w_div_stemness</code>).</p>
+<hr />
+<h2 id="inheritance-details">2.4.3 Inheritance Details</h2>
+<p><strong>Location:</strong> Advanced Settings → “🧬 Inheritance
+Details” <strong>Toggle:</strong> “Customize inheritance” <em>(default:
+OFF)</em></p>
+<p>The parameters shown depend on the <strong>Inheritance Mode</strong>
+selected in Basic Settings.</p>
+<hr />
+<p><strong>Mode: Centriole</strong> <em>(default — recommended)</em></p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 25%" />
+<col style="width: 19%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>centriole_stemness_factor</code></td>
+<td>0.015</td>
+<td>0 – 0.05</td>
+<td>Rate at which stemness decreases with centriole age. Higher =
+stronger age effect</td>
+</tr>
+<tr>
+<td><code>centriole_age_cap</code></td>
+<td>10</td>
+<td>1 – 50</td>
+<td>Maximum centriole age. Above this cap, stemness stabilizes</td>
+</tr>
+<tr>
+<td><code>centriole_stress_factor</code></td>
+<td>0.01</td>
+<td>0 – 0.05</td>
+<td>Rate at which stress increases with centriole age</td>
+</tr>
+</tbody>
+</table>
+<p><em>How it works:</em> At each division, one daughter receives the
+old centriole (lower stemness) and the other receives a new one (higher
+stemness). Asymmetry emerges naturally from this mechanism without
+requiring explicit rules. This mechanism is the primary reason the
+Centriole mode produces more realistic asymmetry than the Asymmetric
+mode without requiring manual parameter tuning.</p>
+<hr />
+<p><strong>Mode: Symmetric</strong></p>
+<p>No additional parameters. Both daughters inherit identical copies of
+all parent properties.</p>
+<hr />
+<p><strong>Mode: Asymmetric</strong></p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 25%" />
+<col style="width: 19%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stemness_asymmetry</code></td>
+<td>0.2</td>
+<td>0 – 1</td>
+<td>Stemness difference between the two daughters (~one gets +0.2, the
+other −0.2)</td>
+</tr>
+<tr>
+<td><code>stress_asymmetry</code></td>
+<td>0.1</td>
+<td>0 – 1</td>
+<td>Stress difference between the two daughters</td>
+</tr>
+</tbody>
+</table>
+<p><em>How it works:</em> Asymmetry is applied explicitly at every
+division. One daughter is “young” (high stemness, low stress), the other
+is “old” (low stemness, high stress). Biologically motivated but can
+produce instability at high values.</p>
+<hr />
+<h2 id="epigenetic-details">2.4.4 Epigenetic Details</h2>
+<p><strong>Location:</strong> Advanced Settings → “📊 Epigenetic
+Details” <strong>Visibility:</strong> <em>Only available when Epigenetic
+Memory = ON in Basic Settings</em> <strong>Toggle:</strong> “Customize
+epigenetics” <em>(default: OFF)</em> Epigenetic memory is a core
+stability mechanism: without it, every fate decision is independent of
+the parent’s history, producing a noisier and less predictable
+system.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>What It Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>inheritance_noise</code></td>
+<td>0.02</td>
+<td>0 – 0.2</td>
+<td>Random variation added when passing fate bias to daughters.
+<code>0</code> = perfect copy; <code>0.02</code> = slight noise;
+<code>0.2</code> = nearly random</td>
+</tr>
+<tr>
+<td><code>asymmetry_strength</code></td>
+<td>0.02</td>
+<td>0 – 0.1</td>
+<td>Size of the epigenetic bias shift between daughters. <code>0</code>
+= identical; <code>0.1</code> = strong divergence</td>
+</tr>
+<tr>
+<td><code>drift_rate</code></td>
+<td>0.0005</td>
+<td>0 – 0.001</td>
+<td>Speed at which epigenetic memory fades toward a neutral state over
+time. <code>0</code> = permanent memory; <code>0.001</code> = fades over
+~1 000 h</td>
+</tr>
+</tbody>
+</table>
+<p><strong>How it works:</strong> When a cell divides, daughters inherit
+a probabilistic bias toward the parent’s last fate choice (self-renewal
+or commitment). This bias: - Is passed with some noise
+(<code>inheritance_noise</code>) - Can differ slightly between the two
+daughters (<code>asymmetry_strength</code>) - Gradually erodes toward
+neutrality over time (<code>drift_rate</code>)</p>
+<p><strong>When to change:</strong></p>
+<table>
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Adjustment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Study a world without epigenetic memory</td>
+<td>Set <code>drift_rate = 0.01</code> (memory fades quickly)</td>
+</tr>
+<tr>
+<td>Study permanent epigenetic locking</td>
+<td>Set <code>drift_rate = 0</code></td>
+</tr>
+<tr>
+<td>More heritable fate decisions</td>
+<td>Lower <code>inheritance_noise</code> toward 0</td>
+</tr>
+<tr>
+<td>More random, noisy inheritance</td>
+<td>Raise <code>inheritance_noise</code> toward 0.2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="lifetime-dynamics">2.4.5 Lifetime Dynamics</h2>
+<p><strong>Location:</strong> Advanced Settings → “⏳ Lifetime Dynamics”
+<strong>Toggle:</strong> “Customize lifetime evolution” <em>(default:
+OFF)</em></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Range</th>
+<th>What It Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stress_accumulation_rate</code></td>
+<td>0.001</td>
+<td>0 – 0.01</td>
+<td>Per-hour stress accumulation (overrides the Basic Settings value if
+set here)</td>
+</tr>
+<tr>
+<td><code>stemness_drift_rate</code></td>
+<td>0.0</td>
+<td>0 – 0.001</td>
+<td>Rate at which stemness passively declines over time, independent of
+division. Default <code>0</code> = disabled</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Notes:</strong> ⚠️ <strong>Warning:</strong> The
+<code>stress_accumulation_rate</code> parameter here
+<strong>overrides</strong> the Basic Settings value if both are set.
+This is intended for advanced users who want to explore the same
+scenario with different stress profiles. <strong>Most users should set
+stress_accumulation_rate in Basic Settings (Section 2.1.3)
+only.</strong> - <code>stemness_drift_rate</code> is disabled by
+default. If you want stemness to erode over time without relying on
+epigenetic inheritance, you can activate it here — but in most cases the
+centriole-based or epigenetic mechanisms already handle this more
+realistically.</p>
+<hr />
+<h2 id="quick-reference-summary">2.4.6 Quick Reference Summary</h2>
+<h3 id="parameter-importance-at-a-glance">Parameter importance at a
+glance</h3>
+<table>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 35%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr>
+<th>Group</th>
+<th>Importance</th>
+<th>Typical Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Control Mechanisms (M6.4, M6.2, M4)</td>
+<td>🔴 High</td>
+<td>Keep ON — core homeostasis</td>
+</tr>
+<tr>
+<td>Division Fates (2.5)</td>
+<td>🔴 High</td>
+<td>Change to study self-renewal vs. commitment balance — direct control
+over HSC pool stability</td>
+</tr>
+<tr>
+<td>Division Rates</td>
+<td>🟡 Medium</td>
+<td>Change for sensitivity analysis only</td>
+</tr>
+<tr>
+<td>Apoptosis Rates</td>
+<td>🟡 Medium</td>
+<td>Change for sensitivity analysis only</td>
+</tr>
+<tr>
+<td>Inheritance Details</td>
+<td>🟡 Medium</td>
+<td>Depends on chosen Inheritance Mode</td>
+</tr>
+<tr>
+<td>State Modulation</td>
+<td>🟢 Low</td>
+<td>Specialized; defaults are well calibrated</td>
+</tr>
+<tr>
+<td>Epigenetic Details</td>
+<td>🟢 Low</td>
+<td>Fine-tuning only; defaults are stable</td>
+</tr>
+<tr>
+<td>Lifetime Dynamics</td>
+<td>🟢 Low</td>
+<td>Rarely needed; stress handled in Basic Settings</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="recipe-for-beginners">Recipe for beginners</h3>
+<pre><code>Basic Settings         → all defaults
+Control Mechanisms     → all ON  (M6.4, M6.2, M4)
+Division Rates         → OFF (use defaults)
+Apoptosis Rates        → OFF (use defaults)
+Division Fates         → OFF (or ON if you want to adjust fate balance)
+State Modulation       → OFF
+Inheritance Details    → OFF  (Centriole mode handles this automatically)
+Epigenetic Details     → OFF  (even if Epigenetic Memory = ON)
+Lifetime Dynamics      → OFF</code></pre>
+<p><strong>Result:</strong> A stable, realistic, well-calibrated
+simulation. ✓</p>
+<hr />
+<h3 id="recipe-for-advanced-users">Recipe for advanced users</h3>
+<ul>
+<li>Enable <strong>State Modulation</strong> to probe how strongly
+stemness and stress drive behavior</li>
+<li>Enable <strong>Inheritance Details</strong> to study centriole aging
+or explicit asymmetry</li>
+<li>Enable <strong>Epigenetic Details</strong> to test scenarios where
+memory is permanent, absent, or noisy</li>
+<li>Always record what you changed and use a fixed <strong>Seed</strong>
+so results are reproducible</li>
+<li>Change <strong>one parameter group at a time</strong> — changing
+several simultaneously makes it hard to attribute observed effects</li>
+</ul>
+<hr />
+<p><em>End of Part 2.4 — Additional Advanced Parameters</em></p>
+<hr />
+<h2 id="division-fate-weights">2.5 Division Fate Weights</h2>
+<h3 id="introduction-5">2.5.1 Introduction</h3>
+<p>Division fate weights are the probabilities that determine what
+happens when a cell divides. They are the most direct lever for
+controlling the long-term balance of the system: too much self-renewal
+and progenitors accumulate; too much commitment and the stem cell pool
+depletes.</p>
+<p>Location in UI: Advanced Settings → “⚖ Division Fates” Toggle: “Use
+custom fate weights” (default: OFF) When ON: sliders appear for each
+dividing cell type.</p>
+<h3 id="the-three-fate-outcomes">2.5.2 The Three Fate Outcomes</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Fate</th>
+<th>Symbol</th>
+<th>What happens at division</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Self-renewal</td>
+<td>SR</td>
+<td>Both daughter cells are the same type as the parent. The pool grows
+by one cell.</td>
+</tr>
+<tr>
+<td>Asymmetric</td>
+<td>AS</td>
+<td>One daughter stays the same type; the other becomes the next type
+down the differentiation tree. Pool size is maintained.</td>
+</tr>
+<tr>
+<td>Commitment</td>
+<td>CO</td>
+<td>Both daughters become the next type down the tree. The parent type
+loses one cell.</td>
+</tr>
+</tbody>
+</table>
+<p>The three probabilities must always sum to 100%. The simulator
+enforces this automatically — adjusting one slider rescales the others
+proportionally.</p>
+<h3 id="default-fate-weights-by-cell-type">2.5.3 Default Fate Weights by
+Cell Type</h3>
+<table>
+<thead>
+<tr>
+<th>Cell type</th>
+<th>Self-renewal %</th>
+<th>Asymmetric %</th>
+<th>Commitment %</th>
+<th>Bias</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC</td>
+<td>82.5</td>
+<td>12.5</td>
+<td>5.0</td>
+<td>Strong self-renewal</td>
+</tr>
+<tr>
+<td>MPP</td>
+<td>50.0</td>
+<td>30.0</td>
+<td>20.0</td>
+<td>Balanced</td>
+</tr>
+<tr>
+<td>CMP</td>
+<td>30.0</td>
+<td>40.0</td>
+<td>30.0</td>
+<td>Commitment-leaning</td>
+</tr>
+<tr>
+<td>CLP</td>
+<td>30.0</td>
+<td>40.0</td>
+<td>30.0</td>
+<td>Commitment-leaning</td>
+</tr>
+</tbody>
+</table>
+<p>Terminal cells (Myeloid, Erythroid, B_cell, T_cell) do not divide and
+have no fate weights.</p>
+<p>Note: the percentages for MPP, CMP, and CLP above are representative
+defaults. Verify the exact values displayed in your simulator’s
+interface, as they may differ from those shown here.</p>
+<h3 id="how-changing-fate-weights-affects-the-system">2.5.4 How Changing
+Fate Weights Affects the System</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Change</th>
+<th>Immediate effect</th>
+<th>Long-term effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Increase HSC self-renewal</td>
+<td>More HSC–HSC divisions</td>
+<td>HSC pool grows; downstream lineages may shrink temporarily</td>
+</tr>
+<tr>
+<td>Increase HSC commitment</td>
+<td>Fewer HSC retained</td>
+<td>HSC pool depletes; downstream lineages expand briefly, then
+collapse</td>
+</tr>
+<tr>
+<td>Increase MPP asymmetric</td>
+<td>More MPP→CMP/CLP output</td>
+<td>Faster production of terminal cells</td>
+</tr>
+<tr>
+<td>Increase CMP commitment</td>
+<td>Faster Myeloid/Erythroid production</td>
+<td>CMP pool shrinks; burst of terminal output followed by deficit</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rule of thumb:</strong> HSC self-renewal probability is the
+single most influential fate parameter. Reducing it below ~70% makes the
+system structurally unstable at default population targets.</p>
+<h3 id="recommended-scenarios-1">2.5.5 Recommended Scenarios</h3>
+<p><strong>Scenario 1 — “Default balance” (recommended)</strong> All
+fate weights at defaults. Toggle OFF. Result: stable long-term
+equilibrium.</p>
+<p><strong>Scenario 2 — “HSC pool study”</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC self-renewal</td>
+<td>75%</td>
+</tr>
+<tr>
+<td>HSC asymmetric</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>HSC commitment</td>
+<td>10%</td>
+</tr>
+</tbody>
+</table>
+<p>Result: slightly lower HSC pool, faster downstream output. Good for
+studying how the system compensates for reduced stem cell
+self-maintenance.</p>
+<p><strong>Scenario 3 — “Forced differentiation”</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC commitment</td>
+<td>20%</td>
+</tr>
+<tr>
+<td>HSC self-renewal</td>
+<td>70%</td>
+</tr>
+</tbody>
+</table>
+<p>Result: HSC pool gradually depletes; the system cannot sustain
+production without the Population Regulation mechanism (M6.4)
+compensating aggressively.</p>
+<p><strong>Scenario 4 — “Pure self-renewal experiment”</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSC self-renewal</td>
+<td>95%</td>
+</tr>
+<tr>
+<td>HSC asymmetric</td>
+<td>4%</td>
+</tr>
+<tr>
+<td>HSC commitment</td>
+<td>1%</td>
+</tr>
+</tbody>
+</table>
+<p>Result: HSC accumulate; downstream lineages starve. Terminal cell
+counts collapse. Useful as a pathological control case.</p>
+<h1 id="part-3.1-model-limitations">Part 3.1: Model Limitations</h1>
+<hr />
+<h2 id="introduction-6">3.1.1 Introduction</h2>
+<p>The model is well-suited for studying normal hematopoiesis, but it
+has real limitations. Knowing where the model performs reliably — and
+where its results cannot be trusted — is as important as knowing how to
+run it. Use the model within its intended scope, and treat its outputs
+accordingly.</p>
+<hr />
+<h2 id="limitations-overview">3.1.2 Limitations Overview</h2>
+<table>
+<colgroup>
+<col style="width: 6%" />
+<col style="width: 23%" />
+<col style="width: 28%" />
+<col style="width: 41%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Limitation</th>
+<th>Consequences</th>
+<th>What you cannot do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>No spatial structure</strong> <em>(well-mixed)</em></td>
+<td>Ignores local niche geometry; no cytokine gradients; no HSC
+migration between niches</td>
+<td>Model post-irradiation recovery; study HSC niche localization</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Simplified cell type hierarchy</strong></td>
+<td>Only 8 cell types; no megakaryocytes; no intermediate progenitor
+stages</td>
+<td>Model megakaryopoiesis; model thrombopoiesis accurately</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>No peripheral cell death</strong></td>
+<td>All cells “die” inside the bone marrow compartment; real terminal
+cells die in circulation and tissues</td>
+<td>Get accurate cell lifespan estimates; model tissue-specific
+turnover</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>No mutations or clonality</strong></td>
+<td>No selective advantage for mutant clones; no clonal competition</td>
+<td>Model leukemia, clonal hematopoiesis, myelodysplastic syndromes</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Chronic stress only</strong></td>
+<td>Only slow, cumulative stress
+(<code>stress_accumulation_rate</code>); no acute perturbations</td>
+<td>Model acute chemotherapy, radiation doses, or infectious shock</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>No cytokine signaling</strong></td>
+<td>No G-CSF, GM-CSF, EPO, TPO, or other growth factors; system
+regulates only through its own internal mechanisms</td>
+<td>Simulate cytokine therapy; calculate treatment efficacy</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Simplified differentiation pathways</strong></td>
+<td>CMP → Myeloid and CLP → B/T are linearized; no branching at
+intermediate stages</td>
+<td>Accurately model granulopoiesis sub-steps or early
+lymphopoiesis</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Calibrated to mouse, not human</strong></td>
+<td>Physiological timescales differ (mouse: days; human: weeks–months);
+absolute numbers are not transferable</td>
+<td>Apply results directly to human patients or clinical data</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Simplified epigenetics</strong></td>
+<td>Memory is a single continuous variable, not DNA methylation, histone
+modification, or chromatin state</td>
+<td>Predict specific epigenetic marks or long-term epigenetic
+reprogramming</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong>No immune feedback</strong></td>
+<td>HSCs do not respond to signals from circulating lymphocytes,
+macrophages, or inflammatory cytokines</td>
+<td>Model autoimmune hematopoietic failure, infection-driven expansion,
+or immune-mediated aplasia</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="summary-what-the-model-does-well-vs.-poorly">3.1.3 Summary: What
+the Model Does Well vs. Poorly</h2>
+<h3 id="the-model-works-well-for">✅ The model works well for:</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 71%" />
+</colgroup>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Suitable questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Normal hematopoiesis</strong></td>
+<td>How does the system reach steady state? What is the HSC/MPP ratio at
+equilibrium?</td>
+</tr>
+<tr>
+<td><strong>Homeostasis &amp; regulation</strong></td>
+<td>What role does population regulation (M6.4) play? How does niche
+signaling protect HSCs?</td>
+</tr>
+<tr>
+<td><strong>Long-term stability</strong></td>
+<td>Does the HSC pool persist over hundreds of simulated hours?</td>
+</tr>
+<tr>
+<td><strong>Mechanism ablation studies</strong></td>
+<td>What happens if M6.2 is turned off? How sensitive is the system to
+changes in fate weights?</td>
+</tr>
+<tr>
+<td><strong>Parametric sensitivity</strong></td>
+<td>Which parameters matter most? What drives the system toward or away
+from equilibrium?</td>
+</tr>
+<tr>
+<td><strong>Education</strong></td>
+<td>Understanding stochastic cell systems, homeostasis, and hierarchical
+differentiation</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Good questions to ask:</strong> <em>“How does the system
+recover from a 50% depletion?” / “What balance between self-renewal and
+commitment keeps the HSC pool stable?” / “How does increased stress rate
+affect long-term cell composition?”</em></p>
+</blockquote>
+<hr />
+<h3 id="the-model-does-not-work-well-for">❌ The model does not work
+well for:</h3>
+<table>
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Why it fails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Leukemia / cancer</strong></td>
+<td>No mutation mechanism, no selective pressure, no clonal
+competition</td>
+</tr>
+<tr>
+<td><strong>Acute clinical events</strong></td>
+<td>No acute stress pathway — only chronic accumulation</td>
+</tr>
+<tr>
+<td><strong>Cytokine therapy</strong></td>
+<td>No signaling molecules in the model</td>
+</tr>
+<tr>
+<td><strong>Clinical predictions for patients</strong></td>
+<td>Calibrated to mouse; human physiology differs substantially</td>
+</tr>
+<tr>
+<td><strong>Post-irradiation recovery</strong></td>
+<td>No spatial structure; local niche dynamics are absent</td>
+</tr>
+<tr>
+<td><strong>Aplastic anemia</strong></td>
+<td>System recovers too well; no mechanism for persistent HSC
+exhaustion</td>
+</tr>
+<tr>
+<td><strong>Polycythemia / thrombocytosis</strong></td>
+<td>No lineage-specific feedback; regulation is global</td>
+</tr>
+<tr>
+<td><strong>Immune disorders</strong></td>
+<td>No B/T cell → HSC feedback loop</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Poor questions to ask:</strong> <em>“Will this drug cure
+leukemia?” / “What are the correct parameters for a human patient?” /
+“How many days will a patient’s neutrophils recover after
+chemotherapy?”</em></p>
+</blockquote>
+<hr />
+<h3 id="practical-examples-when-limitations-bite">Practical Examples:
+When Limitations Bite</h3>
+<p><strong>Example 1: No mutations → Cannot model leukemia</strong> -
+<em>What you might try:</em> “Let me increase HSC self-renewal to 95% to
+mimic uncontrolled growth” - <em>What happens:</em> HSC pool explodes,
+but there’s no selective advantage — all cells are equivalent - <em>Why
+it fails:</em> Real leukemia requires mutant cells to outcompete normal
+HSCs. The model has no mechanism for clonal selection. - <em>Better
+approach:</em> Use this model to understand normal HSC regulation under
+high self-renewal, then consult a specialized leukemia simulator.</p>
+<p><strong>Example 2: Only chronic stress → Cannot model
+chemotherapy</strong> - <em>What you might try:</em> “Let me increase
+stress_accumulation_rate to 0.1 to simulate acute chemo damage” -
+<em>What happens:</em> Slow, gradual cell degradation over 100–200 hours
+— not an acute insult - <em>Why it fails:</em> Chemotherapy delivers a
+sudden burst of damage, not slow aging. The model only knows cumulative
+stress over time. - <em>Better approach:</em> Use Duration=200+ hours to
+study long-term recovery dynamics, understanding that the initial phase
+will not accurately reflect acute chemo effects.</p>
+<p><strong>Example 3: Mouse-calibrated → Cannot apply to humans
+directly</strong> - <em>What you might try:</em> “Let me run
+Duration=1000 hours to model months of human time” - <em>What
+happens:</em> You get long-term dynamics, but in mouse timescales, not
+human physiology - <em>Why it fails:</em> All parameters are calibrated
+to mouse bone marrow. Human HSCs divide much more slowly, and cell
+lifespans are weeks–months, not hours–days. - <em>Better approach:</em>
+Use the model for qualitative understanding of mechanisms, not as a
+clinical predictor. Any translation to humans would require complete
+recalibration.</p>
+<p><strong>Example 4: No spatial structure → Cannot study local niche
+effects</strong> - <em>What you might try:</em> “Let me set Niche
+Modulation (k=10) to maximum to study how the niche affects recovery” -
+<em>What happens:</em> The niche signal is global — all HSCs feel it
+equally. There is no local geometry, no gradients, no proximity effects.
+- <em>Why it fails:</em> Real bone marrow has discrete HSC niches
+(perivascular, endosteal). Some HSCs are “sheltered” while others are
+not. The model treats all HSCs as if they experience an identical niche
+signal. - <em>Better approach:</em> Study how the strength of niche
+signaling (k parameter) affects HSC pool behavior, knowing that you’re
+studying a simplified, well-mixed version of the true spatial
+problem.</p>
+<hr />
+<h2 id="when-to-trust-the-results">3.1.4 When to Trust the Results</h2>
+<h3 id="trust-the-results-when">✅ Trust the results when:</h3>
+<ul>
+<li>The question concerns <strong>normal hematopoiesis</strong> under
+stable or mildly perturbed conditions</li>
+<li>You are studying <strong>qualitative effects</strong> (“more /
+less”, “faster / slower”) rather than exact quantities</li>
+<li>You are comparing <strong>two scenarios</strong> under the same
+parameter set (“what if X is on vs. off?”)</li>
+<li>You are performing a <strong>mechanism ablation</strong> (toggle one
+control mechanism and observe the difference)</li>
+<li>Parameters are within <strong>reasonable ranges</strong> (not pushed
+to extremes)</li>
+<li>You are aware of the limitations and are accounting for them in your
+interpretation</li>
+</ul>
+<h3 id="do-not-trust-the-results-when">❌ Do not trust the results
+when:</h3>
+<ul>
+<li>The question involves <strong>disease, mutation, or clonal
+dynamics</strong></li>
+<li>You need <strong>precise quantitative values</strong> (absolute cell
+counts, exact lifespans)</li>
+<li>You are trying to apply results <strong>directly to human biology or
+clinical outcomes</strong></li>
+<li>Parameters have been pushed to <strong>extreme or unrealistic
+values</strong></li>
+<li>You are using the model as a <strong>predictive clinical
+tool</strong></li>
+</ul>
+<hr />
+<h3 id="the-golden-rule">The golden rule</h3>
+<blockquote>
+<p><em>“A model is a simplification of reality — not reality
+itself.”</em></p>
+</blockquote>
+<p>Use it as a tool for <strong>understanding mechanisms</strong> and
+exploring <strong>qualitative behavior</strong>, not as an oracle for
+predicting specific outcomes.</p>
+<table>
+<thead>
+<tr>
+<th>The model is good for</th>
+<th>The model is not suitable for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Understanding mechanisms</td>
+<td>Clinical predictions</td>
+</tr>
+<tr>
+<td>Qualitative system behavior</td>
+<td>Exact quantitative calculations</td>
+</tr>
+<tr>
+<td>Parametric sensitivity</td>
+<td>Disease modeling</td>
+</tr>
+<tr>
+<td>Ablation / comparative studies</td>
+<td>Drug target selection</td>
+</tr>
+<tr>
+<td>Educational purposes</td>
+<td>Direct application to patients</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="possible-future-improvements">3.1.5 Possible Future
+Improvements</h2>
+<p>The limitations above reflect deliberate design trade-offs, not bugs.
+Each would require substantial development effort to address:</p>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 35%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Improvement</th>
+<th>What it would enable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Spatial structure</strong> — add (x, y, z) coordinates and
+local niches</td>
+<td>Post-irradiation recovery; cytokine gradient effects; HSC
+migration</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Mutations &amp; clonality</strong> — random mutation events
++ selective advantage</td>
+<td>Leukemia modeling; clonal hematopoiesis; myelodysplasia</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Cytokine signaling</strong> — G-CSF, EPO, TPO, GM-CSF
+etc.</td>
+<td>Cytokine therapy simulation; treatment efficacy calculations</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Multiple organs</strong> — spleen, peripheral vasculature,
+inter-organ migration</td>
+<td>Extramedullary hematopoiesis; stress erythropoiesis</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Immune feedback</strong> — B/T cell → HSC signaling;
+inflammation and infection</td>
+<td>Immune-mediated aplasia; infection-driven expansion</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Detailed epigenetics</strong> — DNA methylation, histone
+states, chromatin</td>
+<td>Long-term epigenetic reprogramming; precise fate inheritance</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Human-calibrated parameters</strong> — recalibrated to human
+physiological timescales</td>
+<td>Translational relevance; age-dependent variation (young
+vs. elderly)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Acute perturbations</strong> — radiation dose model, acute
+infection, chemotherapy shock</td>
+<td>Bone marrow recovery modeling; treatment scheduling</td>
+</tr>
+</tbody>
+</table>
+<p>All of these improvements would require additional experimental data,
+extended validation, and significant increases in computational cost.
+The current model represents the optimal balance between
+<strong>biological realism</strong> and <strong>usability</strong>.</p>
+<hr />
+<h2 id="end-of-part-3.1-model-limitations"><em>End of Part 3.1 — Model
+Limitations</em></h2>
+<h2 id="part-3.2-reading-the-simulator-output">Part 3.2: Reading the
+Simulator Output</h2>
+<h3 id="overview">3.2.1 Overview</h3>
+<p>After a simulation run completes, the right panel displays a set of
+charts. Each chart shows a different aspect of the population over
+simulated time (x-axis, in hours). This section explains what each chart
+shows and how to interpret common patterns.</p>
+<h3 id="chart-descriptions">3.2.2 Chart Descriptions</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Chart name</th>
+<th>Y-axis</th>
+<th>What to look for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Population</td>
+<td>Cell count</td>
+<td>Does the line plateau (homeostasis) or grow/collapse? The plateau
+level should approximate the Target Population setting.</td>
+</tr>
+<tr>
+<td>HSC Pool</td>
+<td>HSC count</td>
+<td>A stable or slowly-declining line is normal. Rapid decline indicates
+over-commitment; a rising line indicates excess self-renewal.</td>
+</tr>
+<tr>
+<td>Cell-type Composition</td>
+<td>Cell count per type (stacked or overlaid)</td>
+<td>Relative widths of each type’s band show lineage balance.
+Disappearing bands indicate lineage collapse.</td>
+</tr>
+<tr>
+<td>Division Events</td>
+<td>Events per time unit</td>
+<td>Peaks indicate the system is recovering from a deficit; flat lines
+indicate equilibrium.</td>
+</tr>
+<tr>
+<td>Apoptosis Events</td>
+<td>Events per time unit</td>
+<td>Sustained elevation signals stress accumulation or crowding
+apoptosis (M4) activation.</td>
+</tr>
+<tr>
+<td>Mean Stemness</td>
+<td>Average stemness across all HSC</td>
+<td>A declining trend over time indicates centriole aging accumulating
+across the pool.</td>
+</tr>
+<tr>
+<td>Mean Stress</td>
+<td>Average stress across all cells</td>
+<td>Should grow slowly and plateau. Rapid growth means
+stress_accumulation_rate is set too high.</td>
+</tr>
+</tbody>
+</table>
+<p>Note: not all charts may be visible by default — some may require
+toggling the display options in the chart panel.</p>
+<h3 id="common-patterns-and-what-they-mean">3.2.3 Common Patterns and
+What They Mean</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Likely cause</th>
+<th>What to check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Population plateaus near target</td>
+<td>Normal homeostasis</td>
+<td>Nothing — system is working correctly</td>
+</tr>
+<tr>
+<td>Population oscillates and never settles</td>
+<td>Density gamma (γ) too high, or fate weights unbalanced</td>
+<td>Reduce γ; check HSC commitment probability</td>
+</tr>
+<tr>
+<td>HSC pool collapses within first 50 h</td>
+<td>Commitment probability too high, or niche modulation OFF</td>
+<td>Enable M6.2 or reduce commitment weight</td>
+</tr>
+<tr>
+<td>Terminal cells disappear gradually</td>
+<td>Progenitor bottleneck (MPP or CMP depleted)</td>
+<td>Check division rates; ensure M6.4 is ON</td>
+</tr>
+<tr>
+<td>Population grows without ceiling</td>
+<td>Target Population toggle OFF, or M4 off with γ = 0</td>
+<td>Enable Target Population or increase γ</td>
+</tr>
+<tr>
+<td>Mean stress rises rapidly then plateaus early</td>
+<td>Stress accumulation rate too high</td>
+<td>Reduce stress_accumulation_rate in Basic Settings</td>
+</tr>
+<tr>
+<td>All charts flat from t = 0</td>
+<td>Simulation may not have run</td>
+<td>Check for error messages; try reducing Duration</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="appendix-glossary">Appendix: Glossary</h1>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Apoptosis</td>
+<td>Programmed cell death — a cell actively destroys itself rather than
+being killed externally. In the model, expressed as a rate in events per
+hour.</td>
+</tr>
+<tr>
+<td>Asymmetric division</td>
+<td>A division where one daughter cell retains the parent’s identity and
+the other becomes a different cell type.</td>
+</tr>
+<tr>
+<td>Commitment</td>
+<td>A division fate where both daughter cells differentiate into the
+next type down the hierarchy. The parent type “sacrifices” itself to
+produce two progenitors.</td>
+</tr>
+<tr>
+<td>CLP (Common Lymphoid Progenitor)</td>
+<td>An intermediate cell type that gives rise to B-cells and T-cells.
+Cannot become myeloid cells.</td>
+</tr>
+<tr>
+<td>CMP (Common Myeloid Progenitor)</td>
+<td>An intermediate cell type that gives rise to myeloid and erythroid
+cells. Cannot become lymphoid cells.</td>
+</tr>
+<tr>
+<td>Differentiation</td>
+<td>The process by which a less-specialised cell becomes a
+more-specialised cell type. Always one-way in this model.</td>
+</tr>
+<tr>
+<td>Division rate</td>
+<td>The average number of divisions a cell performs per hour. Expressed
+in units of 1/h.</td>
+</tr>
+<tr>
+<td>Epigenetic memory</td>
+<td>In the model: a cell’s tendency to repeat its parent’s fate choice.
+Controlled by the inheritance_noise and drift_rate parameters.</td>
+</tr>
+<tr>
+<td>Hematopoiesis</td>
+<td>The biological process of blood cell production, occurring primarily
+in the bone marrow.</td>
+</tr>
+<tr>
+<td>HSC (Hematopoietic Stem Cell)</td>
+<td>The most primitive cell in the hierarchy. HSCs self-renew
+indefinitely and give rise to all other blood cell types.</td>
+</tr>
+<tr>
+<td>Homeostasis</td>
+<td>The system’s ability to maintain a stable population size over time
+despite ongoing cell death and renewal.</td>
+</tr>
+<tr>
+<td>MPP (Multipotent Progenitor)</td>
+<td>A progenitor cell derived from HSC that can still produce both
+myeloid and lymphoid lineages, but has less self-renewal capacity.</td>
+</tr>
+<tr>
+<td>Niche</td>
+<td>The bone marrow microenvironment surrounding HSCs. In the model, the
+niche suppresses commitment when the stem cell pool is depleted.</td>
+</tr>
+<tr>
+<td>Progenitor</td>
+<td>Any cell that has partially differentiated from an HSC but has not
+yet reached a terminal fate (HSC, MPP, CMP, CLP are all
+progenitors).</td>
+</tr>
+<tr>
+<td>Self-renewal</td>
+<td>A division fate where both daughters are identical to the parent.
+The cell type’s pool grows by one.</td>
+</tr>
+<tr>
+<td>Seed</td>
+<td>A number that initialises the random number generator. The same seed
+always produces the same simulation result.</td>
+</tr>
+<tr>
+<td>Stemness</td>
+<td>A value between 0 and 1 representing a cell’s capacity for sustained
+self-renewal. Higher stemness = more division potential.</td>
+</tr>
+<tr>
+<td>Stress</td>
+<td>A cell-internal counter that accumulates over time, representing
+replicative damage. High stress slows division and accelerates
+apoptosis.</td>
+</tr>
+<tr>
+<td>Terminal cell</td>
+<td>A fully differentiated cell that performs a specific function
+(Myeloid, Erythroid, B_cell, T_cell). Terminal cells do not divide.</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

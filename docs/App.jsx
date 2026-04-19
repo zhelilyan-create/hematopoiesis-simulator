@@ -1016,6 +1016,10 @@ function App() {
             Running… {progress.toFixed(0)}%
           </span>}
           {finished && !running && <span className="text-green-400">✓ Complete</span>}
+          <a href="./Help_page/help.html" target="_blank"
+             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors">
+            📖 Help
+          </a>
           <a href={`${API}/docs`} target="_blank" className="text-gray-500 hover:text-gray-300 text-xs">API docs ↗</a>
         </div>
       </header>
