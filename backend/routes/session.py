@@ -55,13 +55,22 @@ async def start_session(body: StartRequest):
         del sessions[oldest]
 
     session_id = uuid.uuid4().hex[:12]
-    sessions[session_id] = SimulationSession(
-        session_id=session_id,
-        config=cfg,
-        seed=body.seed,
-        t_max=body.t_max,
-        params=params,
-    )
+    try:
+        sessions[session_id] = SimulationSession(
+            session_id=session_id,
+            config=cfg,
+            seed=body.seed,
+            t_max=body.t_max,
+            params=params,
+        )
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail={"error": f"Failed to initialise simulation: {exc}",
+                    "warnings": []},
+        )
 
     return StartResponse(session_id=session_id)
 

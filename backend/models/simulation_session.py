@@ -13,10 +13,17 @@ from typing import Any
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Path: backend lives one level below the project root
+# Path: backend lives one level below the project root.
+# In a PyInstaller frozen bundle __file__-based resolution is unreliable
+# (the module may be stored relative to a different pathex entry).
+# sys._MEIPASS is always the correct bundle root in that case.
 # ---------------------------------------------------------------------------
-_BACKEND_DIR = Path(__file__).parent.parent
-_PROJECT_ROOT = _BACKEND_DIR.parent
+if getattr(sys, "frozen", False):
+    # PyInstaller one-dir: extracted files live in sys._MEIPASS (_internal/)
+    _PROJECT_ROOT = Path(sys._MEIPASS)
+else:
+    _BACKEND_DIR = Path(__file__).parent.parent
+    _PROJECT_ROOT = _BACKEND_DIR.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 
 import yaml
