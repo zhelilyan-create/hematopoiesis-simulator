@@ -325,7 +325,7 @@
           '<img src="../logo.png" alt="" onerror="this.style.display=\'none\'">' +
           '<span>📖 Hematopoiesis Simulator \u2014 Documentation</span>' +
         '</div>' +
-        '<a id="back-btn" href="../">&#8592; Back to Simulator</a>';
+        '<a id="back-btn" href="#" onclick="(window.parent!==window ? window.parent.postMessage(\'close-help\',\'*\') : window.history.back()); return false;">&#8592; Back to Simulator</a>';
       body.prepend(hdr);
 
       // 2. Build sidebar with TOC

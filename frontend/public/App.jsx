@@ -906,8 +906,16 @@ function App() {
   const [progress,   setProgress]   = useState(0);
   const [error,      setError]      = useState(null);
   const [runHistory, setRunHistory] = useState(loadHistory);
+  const [showHelp,   setShowHelp]   = useState(false);
 
   const stopRef = useRef(false);
+
+  // Listen for "close-help" postMessage from the help iframe
+  React.useEffect(() => {
+    const handler = e => { if (e.data === 'close-help') setShowHelp(false); };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   const startSim = useCallback(async () => {
     setError(null); stopRef.current = false;
@@ -1014,10 +1022,10 @@ function App() {
             Running… {progress.toFixed(0)}%
           </span>}
           {finished && !running && <span className="text-green-400">✓ Complete</span>}
-          <a href="./Help_page/help.html" target="_blank"
-             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors">
+          <button onClick={() => setShowHelp(true)}
+             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors cursor-pointer">
             📖 Help
-          </a>
+          </button>
           <a href={`${API}/docs`} target="_blank" className="text-gray-500 hover:text-gray-300 text-xs">API docs ↗</a>
         </div>
       </header>
@@ -1092,6 +1100,27 @@ function App() {
           </div>
         </main>
       </div>
+
+      {/* ── Help overlay (full-screen iframe, no page reload) ── */}
+      {showHelp && (
+        <div style={{position:'fixed', inset:0, zIndex:9999, background:'#fff', display:'flex', flexDirection:'column'}}>
+          <iframe
+            src="./Help_page/help.html"
+            style={{flex:1, border:'none', width:'100%'}}
+            title="Help"
+          />
+          <button
+            onClick={() => setShowHelp(false)}
+            style={{
+              position:'absolute', top:'14px', right:'20px',
+              background:'rgba(255,255,255,0.18)', border:'1px solid rgba(255,255,255,0.4)',
+              color:'white', borderRadius:'6px', padding:'5px 13px',
+              fontSize:'0.82rem', fontWeight:500, cursor:'pointer', zIndex:10000,
+            }}
+            title="Close help"
+          >✕ Close</button>
+        </div>
+      )}
     </div>
   );
 }
