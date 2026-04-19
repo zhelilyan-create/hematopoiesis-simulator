@@ -848,12 +848,12 @@ function PopulationTable({ population, total }) {
 }
 
 /* ─── MetricsCards ───────────────────────────────────────────── */
-function MetricsCards({ states, time, total }) {
-  const dev = total ? Math.abs(total - 1000) / 1000 * 100 : null;
+function MetricsCards({ states, time, total, target }) {
+  const dev = (total && target) ? Math.abs(total - target) / target * 100 : null;
   const cards = [
     { label:'Time (h)',      value: time  != null ? time.toFixed(1) : '—' },
     { label:'Total Cells',   value: total ? total.toLocaleString() : '—',
-      badge: dev != null ? `${dev<=10?'✓':'⚠'} ${dev.toFixed(1)}% from target` : null,
+      badge: dev != null ? `${dev<=10?'✓':'⚠'} ${dev.toFixed(1)}% from target (${target})` : null,
       good: dev != null && dev <= 10 },
     { label:'Mean Stemness', value: states ? states.mean_stemness.toFixed(3) : '—' },
     { label:'Mean Stress',   value: states ? states.mean_stress.toFixed(3)   : '—' },
@@ -1071,12 +1071,17 @@ function App() {
 
         {/* Right panel */}
         <main className="flex-1 overflow-y-auto p-5 space-y-4">
-          <MetricsCards states={current?.states} time={current?.time} total={current?.total}/>
+          <MetricsCards states={current?.states} time={current?.time} total={current?.total}
+                        target={basic.enable_target_population ? basic.target_population_size : null}/>
 
           <div className="bg-gray-800 rounded-xl p-4">
             <h2 className="text-sm font-semibold text-gray-300 mb-3">Population over Time</h2>
             <LineChart data={history} lines={lineSpecs}
-                       refLines={[{y:1000, label:'Target (1000)', color:'#6b7280'}]}/>
+                       refLines={basic.enable_target_population
+                         ? [{y: basic.target_population_size,
+                             label: `Target (${basic.target_population_size})`,
+                             color: '#6b7280'}]
+                         : []}/>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
