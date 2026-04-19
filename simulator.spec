@@ -5,33 +5,38 @@ Build command (run from project root):
     pyinstaller simulator.spec
 
 Output:
-    dist/HematopoiesisSim/          ← folder to distribute
-    dist/HematopoiesisSim/HematopoiesisSim.exe   ← the executable
+    dist/HematopoiesisSim/
+    dist/HematopoiesisSim/HematopoiesisSim.exe   ← run this
 """
 
 import os
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files
 
-# Project root = directory that contains this spec file
+# Project root = directory containing this spec file
 ROOT = os.path.dirname(os.path.abspath(SPEC))
 
-# ── Data files to bundle ──────────────────────────────────────────────────────
+print(f"[spec] ROOT          = {ROOT}")
+print(f"[spec] frontend/public = {os.path.join(ROOT, 'frontend', 'public')}")
+print(f"[spec] configs       = {os.path.join(ROOT, 'configs')}")
+print(f"[spec] Help_page     = {os.path.join(ROOT, 'Help_page', 'help.html')}")
+
+# ── Data files ────────────────────────────────────────────────────────────────
 datas = [
-    # YAML simulation configs
-    (os.path.join(ROOT, "configs"),                   "configs"),
-    # Frontend static files (CDN React — no build step needed)
-    (os.path.join(ROOT, "frontend", "public"),        os.path.join("frontend", "public")),
-    # Help page (only the rendered HTML — skip raw .md/.docx sources)
-    (os.path.join(ROOT, "Help_page", "help.html"),    "Help_page"),
+    # Simulation YAML configs (required by simulation_session.py)
+    (os.path.join(ROOT, "configs"),              "configs"),
+    # Frontend static files — CDN React, no build step needed
+    (os.path.join(ROOT, "frontend", "public"),   os.path.join("frontend", "public")),
+    # Help page
+    (os.path.join(ROOT, "Help_page", "help.html"), "Help_page"),
 ]
 
-# Matplotlib needs its data directory (fonts, style sheets, etc.)
+# Matplotlib needs its bundled fonts and style-sheet data
 datas += collect_data_files("matplotlib")
-# ReportLab needs its fonts and resources
+# ReportLab needs its Type-1 font data
 datas += collect_data_files("reportlab")
 
 # ── Hidden imports ────────────────────────────────────────────────────────────
-# uvicorn uses a plugin-discovery pattern; PyInstaller misses these.
+# uvicorn uses importlib-based plugin discovery; PyInstaller can't see these.
 hiddenimports = [
     # uvicorn internals
     "uvicorn.logging",
@@ -50,19 +55,19 @@ hiddenimports = [
     "uvicorn.lifespan",
     "uvicorn.lifespan.on",
     "uvicorn.lifespan.off",
-    # async backend
+    # async runtime
     "anyio",
     "anyio._backends._asyncio",
-    # static file serving
+    # static file serving (FastAPI StaticFiles)
     "aiofiles",
     "aiofiles.os",
     "aiofiles.threadpool",
-    # matplotlib Agg backend (used by pdf_exporter)
+    # matplotlib Agg backend (used by pdf_exporter.py)
     "matplotlib.backends.backend_agg",
-    # pydantic v2
+    # pydantic v2 core
     "pydantic",
     "pydantic_core",
-    # email (used by some starlette internals)
+    # email helpers used by some starlette internals
     "email.mime.text",
     "email.mime.multipart",
 ]
@@ -71,8 +76,8 @@ hiddenimports = [
 a = Analysis(
     [os.path.join(ROOT, "launcher.py")],
     pathex=[
-        ROOT,                              # project root (cell_diff_sim lives here)
-        os.path.join(ROOT, "backend"),     # backend package
+        ROOT,                              # project root → cell_diff_sim importable
+        os.path.join(ROOT, "backend"),     # backend/ → app, desktop_app, routes…
     ],
     binaries=[],
     datas=datas,
@@ -80,37 +85,38 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
+    # IMPORTANT: do NOT exclude stdlib modules (tkinter/wx/Qt are safe to exclude
+    # because they are GUI frameworks, not stdlib).
+    # Never put "unittest", "logging", "email", "json" etc. here!
     excludes=[
-        # GUI frameworks not needed
-        "tkinter", "PyQt5", "PyQt6", "PySide2", "PySide6", "wx",
-        # Jupyter / IPython bloat
+        "tkinter",
+        "PyQt5",  "PyQt6",
+        "PySide2", "PySide6",
+        "wx",
         "IPython", "jupyter", "notebook",
-        # Test frameworks
-        "pytest", "unittest",
     ],
     noarchive=False,
 )
 
 pyz = PYZ(a.pure, a.zipped_data)
 
-# ── Executable (one-directory bundle — fastest startup) ───────────────────────
+# ── Executable ────────────────────────────────────────────────────────────────
 exe = EXE(
     pyz,
     a.scripts,
-    [],                       # binaries go into COLLECT, not inside the exe
+    [],                   # binaries stay in COLLECT (one-dir bundle)
     exclude_binaries=True,
     name="HematopoiesisSim",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,             # show console window — useful to see errors
-                              # change to False for a "silent" release build
-    icon=os.path.join(ROOT, "frontend", "public", "logo.png") if os.path.exists(
-          os.path.join(ROOT, "frontend", "public", "logo.png")) else None,
+    console=True,         # keep console visible so errors are readable
+    icon=None,            # set to "frontend/public/logo.ico" if you convert logo.png
 )
 
 # ── Collect into one directory ────────────────────────────────────────────────
+# Result: dist/HematopoiesisSim/ folder — zip this for distribution.
 coll = COLLECT(
     exe,
     a.binaries,
@@ -119,5 +125,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="HematopoiesisSim",   # → dist/HematopoiesisSim/
+    name="HematopoiesisSim",
 )

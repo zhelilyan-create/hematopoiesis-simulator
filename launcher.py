@@ -1,13 +1,13 @@
 """Hematopoiesis Simulator — Desktop Launcher
 
 PyInstaller entry point.
-Starts the FastAPI backend on 127.0.0.1:8000 and opens the browser.
+Starts the FastAPI backend in a thread and opens the browser.
 
 Usage (development):
     python launcher.py
 
-Usage (built exe):
-    Double-click HematopoiesisSim.exe  (or run from the dist/ folder)
+Usage (built exe — double click):
+    dist/HematopoiesisSim/HematopoiesisSim.exe
 """
 from __future__ import annotations
 
@@ -19,13 +19,13 @@ import webbrowser
 
 # ── Resolve base directory ────────────────────────────────────────────────────
 if getattr(sys, "frozen", False):
-    # PyInstaller one-dir: extracted files live in sys._MEIPASS
+    # PyInstaller one-dir: all extracted files are in sys._MEIPASS
     BASE_DIR = sys._MEIPASS
 else:
-    # Normal Python run from project root
+    # Normal Python run: launcher.py is in the project root
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Put both project root and backend on sys.path before any imports
+# Ensure project root and backend/ are importable before any other imports
 sys.path.insert(0, BASE_DIR)
 sys.path.insert(0, os.path.join(BASE_DIR, "backend"))
 
@@ -40,19 +40,29 @@ def _open_browser() -> None:
     webbrowser.open(URL)
 
 
-if __name__ == "__main__":
-    print(f"[Launcher] Hematopoiesis Simulator starting at {URL}")
-    print("[Launcher] The browser will open automatically in a few seconds…")
+def main() -> None:
+    print("=" * 60)
+    print("  Hematopoiesis Simulator  v0.12  —  Desktop")
+    print("=" * 60)
+    print(f"  Server : {URL}")
+    print("  Browser opens automatically in ~3 seconds")
+    print("  Press Ctrl+C to stop")
+    print("=" * 60)
 
-    # Open browser in background thread so uvicorn can start first
+    # Open browser in background thread (uvicorn starts first)
     threading.Thread(target=_open_browser, daemon=True).start()
 
+    # Import here (after sys.path is set up correctly)
     import uvicorn
-    from desktop_app import app  # import object directly — avoids string-based lookup
+    from desktop_app import app  # registers static file routes on top of app.py
 
     uvicorn.run(
         app,
         host=HOST,
         port=PORT,
-        log_level="warning",   # suppress INFO noise; set "info" to debug
+        log_level="warning",   # suppress INFO noise; use "info" to debug
     )
+
+
+if __name__ == "__main__":
+    main()
