@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: hematopoiesis-simulator-api
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.0"
