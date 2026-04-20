@@ -756,7 +756,6 @@ function StackedAreaChart({ data, layers }) {
 
   // Tooltip dimensions
   const TW = 148, TH = 14 + layers.length * 13 + 16;
-  const tipX = tip ? Math.min(sx(tip.time) + 8, IW - TW + PAD.left - PAD.left) : 0;
   const tipXClamped = tip ? Math.max(0, Math.min(sx(tip.time) + 8, IW - TW)) : 0;
 
   return (
