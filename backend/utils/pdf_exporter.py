@@ -555,14 +555,6 @@ def generate_pdf(session_data: dict) -> bytes:
     canvas_maker = _build_canvas_maker(generated_at, logo_path=_LOGO_PATH)
     doc.build(story, canvasmaker=canvas_maker)
 
-    total_pages = doc.page
-    if total_pages >= 3:
-        print(f"[PDF] ✓ {total_pages} pages — graphs fit on page 2, table on page 3")
-    elif total_pages == 2:
-        print(f"[PDF] ⚠ Only {total_pages} pages — graphs on page 2 but no table page!")
-    else:
-        print(f"[PDF] ✗ {total_pages} page(s) — graphs spilled past page 2, reduce heights!")
-
     pdf_bytes = buf.getvalue()
     for p in tmp_files:
         try:

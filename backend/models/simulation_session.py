@@ -179,7 +179,6 @@ class SimulationSession:
         self.recorder.on_step(0.0, self.population)
         self._next_record_t    = RECORD_INTERVAL  # next grid point after t=0
         effective_seed = seed if seed > 0 else None
-        print(f"[SESSION] created {session_id} | seed_received={seed} | effective_seed={effective_seed} | RECORD_INTERVAL={RECORD_INTERVAL} | t_max={t_max} | expected_pts={int(t_max/RECORD_INTERVAL)+1}")
         self._division_handler = DivisionHandler()
         self._rng = np.random.default_rng(effective_seed)
 
@@ -252,8 +251,6 @@ class SimulationSession:
                 self._next_record_t += RECORD_INTERVAL
             events_done += 1
 
-        if self.finished:
-            print(f"[SESSION] {self.session_id} finished | snapshots={len(self.recorder)} | t_max={self.t_max}")
         return self._build_result(events_executed=events_done)
 
     # ------------------------------------------------------------------
