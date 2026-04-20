@@ -35,6 +35,19 @@ async def start_session(body: StartRequest):
         raise HTTPException(status_code=400, detail={"error": errors[0], "warnings": warnings})
 
     # Build full config
+    #
+    # NOTE: body.config path (direct raw config dict) is intentionally limited.
+    # When body.config is provided, only population_dynamics keys are overlaid
+    # from body.params — all other param categories (inheritance, state_modulation,
+    # epigenetic, state_evolution, division/apoptosis rates) are NOT merged.
+    #
+    # For full parameter control use the standard body.params path (body.config=None),
+    # which routes through build_config() and handles every category.
+    #
+    # The frontend always uses body.params, so end-users are unaffected.
+    # body.config exists for third-party tools that supply a complete YAML-equivalent
+    # dict directly — in that case callers are expected to include all desired keys
+    # in the config dict itself rather than relying on params merging.
     if body.config:
         cfg = body.config
         # Still apply flat params on top if provided
