@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 HARD_BOUNDS: dict[str, tuple[float, float]] = {
+    # Population / fate
     "self_renewal_weight":      (0.0,  1.0),
     "density_gamma":            (0.0, 20.0),
     "density_beta":             (0.0,  3.0),
@@ -10,6 +11,22 @@ HARD_BOUNDS: dict[str, tuple[float, float]] = {
     "crowding_apoptosis_rate":  (0.0,  1.0),
     "t_max":                    (1.0, 5000.0),
     "seed":                     (-1,  999999),
+    # Epigenetic memory (v0.7+)
+    "asymmetry_strength":       (0.0,  1.0),
+    "drift_rate":               (0.0,  0.5),
+    "inheritance_noise":        (0.0,  0.5),
+    # Rate modulation clamps (v0.8+)
+    "max_factor":               (1.0, 10.0),
+    "min_factor":               (0.0,  1.0),
+    # Asymmetric inheritance (v0.6+)
+    "stemness_asymmetry":       (0.0,  1.0),
+    "stress_asymmetry":         (0.0,  1.0),
+    # State-modulation weights (v0.8+, v0.13)
+    "w_apo_repl":               (0.0,  0.1),
+    "w_apo_stress":             (0.0,  1.0),
+    "w_div_epigenetic":         (0.0,  3.0),
+    "w_div_stemness":           (0.0,  5.0),
+    "w_div_stress":             (0.0,  1.0),
 }
 
 DEFAULTS = {
