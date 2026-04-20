@@ -8,15 +8,6 @@ from pydantic import BaseModel, Field
 # Request bodies
 # ---------------------------------------------------------------------------
 
-class PopulationDynamics(BaseModel):
-    target_population_size: int = 1000
-    density_gamma: float = 4.0
-    density_beta: float = 0.0
-    niche_strength: float = 4.0
-    crowding_threshold: float = 1.3
-    crowding_apoptosis_rate: float = 0.1
-
-
 class StartRequest(BaseModel):
     config: Optional[dict] = None          # full YAML-equivalent dict; None = use baseline
     params: Optional[dict] = None          # flat override dict (convenience)
