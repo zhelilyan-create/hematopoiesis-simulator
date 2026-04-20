@@ -50,11 +50,11 @@ async def start_session(body: StartRequest):
     else:
         cfg = build_config(params)
 
-    # Evict oldest session if at capacity
+    # Evict oldest session if at capacity (by created_at, not insertion order)
     global sessions
     if len(sessions) >= MAX_SESSIONS:
-        oldest = next(iter(sessions))
-        del sessions[oldest]
+        oldest_key = min(sessions, key=lambda sid: sessions[sid].created_at)
+        del sessions[oldest_key]
 
     session_id = uuid.uuid4().hex[:12]
     try:
