@@ -42,7 +42,7 @@ def _open_browser() -> None:
 
 def main() -> None:
     print("=" * 60)
-    print("  Hematopoiesis Simulator  v0.12  —  Desktop")
+    print("  Hematopoiesis Simulator  v0.1.0  —  Desktop")
     print("=" * 60)
     print(f"  Server : {URL}")
     print("  Browser opens automatically in ~3 seconds")

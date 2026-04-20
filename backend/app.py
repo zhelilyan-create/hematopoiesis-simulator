@@ -21,8 +21,8 @@ from routes.history import router as history_router
 
 app = FastAPI(
     title="Hematopoiesis Simulator API",
-    description="FastAPI backend for the hematopoiesis CTMC simulation (v0.12).",
-    version="0.12.0",
+    description="Hematopoiesis Simulator",
+    version="0.1.0",
 )
 
 # ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ app.include_router(history_router)
 # ---------------------------------------------------------------------------
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.12.0"}
+    return {"status": "ok", "version": "0.1.0"}
 
 
 if __name__ == "__main__":

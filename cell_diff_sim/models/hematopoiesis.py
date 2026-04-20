@@ -1,4 +1,4 @@
-"""Hematopoiesis differentiation model — v0.12 (selective density control).
+"""Hematopoiesis differentiation model.
 
 Implements AbstractModel for the 8-state hematopoiesis tree:
 
