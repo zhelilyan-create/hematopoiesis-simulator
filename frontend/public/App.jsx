@@ -115,6 +115,51 @@ function buildConfig(b, a) {
   return c;
 }
 
+/* ─── Multi-run helper ───────────────────────────────────────── */
+// Runs one complete session (start → step-loop → snapshot) and returns a result object.
+// Accepts stopRef so parallel runs all respect the Stop button.
+async function runOneSession(stopRef, config, seed) {
+  const res = await fetch(`${API}/session/start`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ params: { ...config, seed }, seed, t_max: config.t_max }),
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.detail?.error || 'Session start failed'); }
+  const { session_id } = await res.json();
+
+  let last = null;
+  while (!stopRef.current) {
+    const sr = await fetch(`${API}/session/${session_id}/step`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ n_events: 500 }),
+    });
+    if (!sr.ok) break;
+    last = await sr.json();
+    if (last.finished) break;
+  }
+
+  let history = [];
+  try {
+    const snap = await fetch(`${API}/session/${session_id}/snapshot`);
+    if (snap.ok) {
+      const sd = await snap.json();
+      if (sd.history) history = sd.history.map(s => ({ time: s.time, total: s.total, ...s.population }));
+    }
+  } catch (_) {}
+
+  const pop = last?.population || {};
+  const tot = last?.total || 1;
+  const mat = ['Myeloid', 'Erythroid', 'B_cell', 'T_cell'].reduce((s, ct) => s + (pop[ct] || 0), 0);
+  return {
+    session_id, seed, history,
+    total:     last?.total || 0,
+    population: pop,
+    states:    last?.states || {},
+    hsc_pct:   (pop.HSC || 0) / tot * 100,
+    mat_pct:   mat / tot * 100,
+    finished:  !!last?.finished,
+  };
+}
+
 /* ─── Utilities ──────────────────────────────────────────────── */
 function loadHistory()    { try { return JSON.parse(localStorage.getItem('hema_runs') || '[]'); } catch { return []; } }
 function saveHistory(arr) { localStorage.setItem('hema_runs', JSON.stringify(arr.slice(-20))); }
@@ -876,6 +921,128 @@ function MetricsCards({ states, time, total, target }) {
   );
 }
 
+/* ─── MiniPopChart ───────────────────────────────────────────── */
+function MiniPopChart({ history, target }) {
+  const W = 210, H = 108, P = { t: 6, r: 6, b: 18, l: 32 };
+  const IW = W - P.l - P.r, IH = H - P.t - P.b;
+  if (!history || history.length < 2)
+    return <div style={{ width: W, height: H }} className="flex items-center justify-center text-gray-600 text-xs">—</div>;
+  const tMax = history[history.length - 1].time || 1;
+  const yMax = Math.max(...history.map(s => s.total), target || 0) * 1.08 || 1;
+  const sx = t => P.l + (t / tMax) * IW;
+  const sy = v => P.t + IH - (v / yMax) * IH;
+  const pts = history.map(s => `${sx(s.time).toFixed(1)},${sy(s.total).toFixed(1)}`).join(' ');
+  const midY = yMax / 2;
+  return (
+    <svg width={W} height={H} style={{ display: 'block' }}>
+      <line x1={P.l} y1={sy(midY)} x2={P.l + IW} y2={sy(midY)} stroke="#374151" strokeWidth={0.5}/>
+      {target && <line x1={P.l} y1={sy(target)} x2={P.l + IW} y2={sy(target)} stroke="#6b7280" strokeWidth={0.8} strokeDasharray="3,2"/>}
+      <polyline points={pts} fill="none" stroke="#60a5fa" strokeWidth={1.5} strokeLinejoin="round"/>
+      <line x1={P.l} y1={P.t} x2={P.l} y2={P.t + IH} stroke="#4b5563" strokeWidth={0.8}/>
+      <line x1={P.l} y1={P.t + IH} x2={P.l + IW} y2={P.t + IH} stroke="#4b5563" strokeWidth={0.8}/>
+      <text x={P.l - 3} y={sy(midY) + 3} textAnchor="end" fill="#6b7280" fontSize={8}>{Math.round(midY)}</text>
+      <text x={P.l} y={H - 3} textAnchor="middle" fill="#6b7280" fontSize={8}>0</text>
+      <text x={P.l + IW} y={H - 3} textAnchor="end" fill="#6b7280" fontSize={8}>{tMax}h</text>
+    </svg>
+  );
+}
+
+/* ─── MultiRunPanel ──────────────────────────────────────────── */
+function MultiRunPanel({ runs, target }) {
+  if (!runs || runs.length === 0) return null;
+  const mean = arr => arr.reduce((s, v) => s + v, 0) / arr.length;
+  const std  = arr => { const m = mean(arr); return Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length); };
+  const cv   = (m, s) => m > 0 ? (s / m * 100).toFixed(1) + '%' : '—';
+  const f1   = v => v.toFixed(1);
+  const f2   = v => v.toFixed(2);
+  const totals  = runs.map(r => r.total);
+  const biases  = runs.map(r => r.states?.mean_bias ?? 0);
+  const hscPcts = runs.map(r => r.hsc_pct);
+  const matPcts = runs.map(r => r.mat_pct);
+  const st = {
+    pop:  { mean: mean(totals),  std: std(totals),  min: Math.min(...totals),  max: Math.max(...totals)  },
+    bias: { mean: mean(biases),  std: std(biases),  min: Math.min(...biases),  max: Math.max(...biases)  },
+    hsc:  { mean: mean(hscPcts), std: std(hscPcts) },
+    mat:  { mean: mean(matPcts), std: std(matPcts) },
+  };
+  const downloadCSV = () => {
+    const rows = [
+      ['Run','Seed','Final Population','HSC%','Maturity%','Mean Bias','Mean Stemness','Mean Stress'],
+      ...runs.map((r, i) => [i+1, r.seed, r.total, r.hsc_pct.toFixed(1), r.mat_pct.toFixed(1),
+        (r.states?.mean_bias??0).toFixed(4),(r.states?.mean_stemness??0).toFixed(4),(r.states?.mean_stress??0).toFixed(4)]),
+      [],['--- Statistics ---'],
+      ['Metric','Mean','Std','CV','Min','Max'],
+      ['Population',f1(st.pop.mean), f1(st.pop.std), cv(st.pop.mean,st.pop.std), st.pop.min, st.pop.max],
+      ['HSC%',      f1(st.hsc.mean), f1(st.hsc.std), cv(st.hsc.mean,st.hsc.std), '', ''],
+      ['Maturity%', f1(st.mat.mean), f1(st.mat.std), cv(st.mat.mean,st.mat.std), '', ''],
+      ['Epi.Bias',  f2(st.bias.mean),f2(st.bias.std),cv(st.bias.mean,st.bias.std),f2(st.bias.min),f2(st.bias.max)],
+    ];
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = `multi_run_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.csv`;
+    a.click();
+  };
+  const cols = runs.length <= 3 ? runs.length : runs.length <= 6 ? 3 : runs.length <= 8 ? 4 : 5;
+  const statRows = [
+    ['Population', f1(st.pop.mean),  f1(st.pop.std),  cv(st.pop.mean,  st.pop.std),  String(st.pop.min),  String(st.pop.max)],
+    ['HSC %',      f1(st.hsc.mean)+'%',f1(st.hsc.std),cv(st.hsc.mean,  st.hsc.std),  '—',  '—'],
+    ['Maturity %', f1(st.mat.mean)+'%',f1(st.mat.std),cv(st.mat.mean,  st.mat.std),  '—',  '—'],
+    ['Epi. Bias',  f2(st.bias.mean), f2(st.bias.std), cv(st.bias.mean, st.bias.std), f2(st.bias.min), f2(st.bias.max)],
+  ];
+  return (
+    <div className="bg-gray-800 rounded-xl p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-300">Multiple Runs — {runs.length} completed</h2>
+        <button onClick={downloadCSV}
+                className="text-xs px-2.5 py-1 bg-blue-700 hover:bg-blue-600 rounded text-white transition-colors">
+          ⬇ CSV
+        </button>
+      </div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        {runs.map((r, i) => (
+          <div key={r.session_id} className="border border-gray-700 rounded-lg p-2 space-y-1.5">
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs font-semibold text-gray-300">Run {i + 1}</span>
+              <span className="text-xs text-gray-600">seed {r.seed}</span>
+            </div>
+            <MiniPopChart history={r.history} target={target}/>
+            <div className="grid grid-cols-2 gap-x-2 text-xs">
+              <span className="text-gray-500">Pop</span>    <span className="text-right font-mono text-gray-200">{r.total.toLocaleString()}</span>
+              <span className="text-gray-500">HSC%</span>   <span className="text-right font-mono text-gray-200">{r.hsc_pct.toFixed(1)}%</span>
+              <span className="text-gray-500">Mat%</span>   <span className="text-right font-mono text-gray-200">{r.mat_pct.toFixed(1)}%</span>
+              <span className="text-gray-500">Bias</span>   <span className="text-right font-mono text-gray-200">{(r.states?.mean_bias??0).toFixed(3)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-gray-700 pt-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Summary Statistics</p>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-500 border-b border-gray-700">
+              <th className="text-left pb-1 pr-3 font-medium">Metric</th>
+              <th className="text-right pb-1 pr-3">Mean</th>
+              <th className="text-right pb-1 pr-3">Std</th>
+              <th className="text-right pb-1 pr-3">CV</th>
+              <th className="text-right pb-1 pr-3">Min</th>
+              <th className="text-right pb-1">Max</th>
+            </tr>
+          </thead>
+          <tbody className="text-gray-300">
+            {statRows.map(([label, ...vals]) => (
+              <tr key={label} className="border-t border-gray-700/40">
+                <td className="py-1 pr-3 text-gray-400">{label}</td>
+                {vals.map((v, j) => <td key={j} className="text-right py-1 pr-3 font-mono">{v}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ─── RunHistory ─────────────────────────────────────────────── */
 function RunHistory({ runs, onRestore }) {
   if (!runs.length) return <div className="text-gray-600 text-sm italic">No completed runs yet.</div>;
@@ -914,6 +1081,9 @@ function App() {
   const [error,      setError]      = useState(null);
   const [runHistory, setRunHistory] = useState(loadHistory);
   const [showHelp,   setShowHelp]   = useState(false);
+  const [numRuns,    setNumRuns]    = useState(1);
+  const [multiRuns,  setMultiRuns]  = useState([]);
+  const [multiDone,  setMultiDone]  = useState(0);
 
   const stopRef = useRef(false);
 
@@ -927,60 +1097,81 @@ function App() {
   const startSim = useCallback(async () => {
     setError(null); stopRef.current = false;
     setHistory([]); setCurrent(null); setProgress(0); setFinished(false); setSessionId(null);
-    try {
-      const config = buildConfig(basic, adv);
-      const res = await fetch(`${API}/session/start`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ params: config, seed: config.seed, t_max: config.t_max }),
-      });
-      if (!res.ok) { const e = await res.json(); setError(e.detail?.error || JSON.stringify(e.detail)); return; }
-      const { session_id } = await res.json();
-      console.log('[SIM] Session started:', session_id);
-      window.currentSessionId = session_id;          // debug: inspect in console
-      setSessionId(session_id);
-      setRunning(true);
-      let batchCount = 0;
-      while (!stopRef.current) {
-        const sr = await fetch(`${API}/session/${session_id}/step`, {
+    setMultiRuns([]); setMultiDone(0);
+
+    const config = buildConfig(basic, adv);
+
+    if (numRuns === 1) {
+      // ── Single run ─────────────────────────────────────────────
+      try {
+        const res = await fetch(`${API}/session/start`, {
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ n_events: 500 }),
+          body: JSON.stringify({ params: config, seed: config.seed, t_max: config.t_max }),
         });
-        if (!sr.ok) { console.error('[SIM] /step failed:', sr.status); break; }
-        const d = await sr.json();
-        batchCount++;
-        setCurrent(d);
-        setProgress(d.finished ? 100 : Math.min(99, d.time / config.t_max * 100));
-
-        // ── Fetch full recorder history after every step ──
-        try {
-          const snapRes = await fetch(`${API}/session/${session_id}/snapshot`);
-          if (snapRes.ok) {
-            const snapData = await snapRes.json();
-            if (snapData.history && snapData.history.length > 1) {
-              setHistory(snapData.history.map(s => ({
-                time: s.time, total: s.total, population: s.population, states: s.states, ...s.population,
-              })));
+        if (!res.ok) { const e = await res.json(); setError(e.detail?.error || JSON.stringify(e.detail)); return; }
+        const { session_id } = await res.json();
+        window.currentSessionId = session_id;
+        setSessionId(session_id);
+        setRunning(true);
+        while (!stopRef.current) {
+          const sr = await fetch(`${API}/session/${session_id}/step`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ n_events: 500 }),
+          });
+          if (!sr.ok) break;
+          const d = await sr.json();
+          setCurrent(d);
+          setProgress(d.finished ? 100 : Math.min(99, d.time / config.t_max * 100));
+          try {
+            const snapRes = await fetch(`${API}/session/${session_id}/snapshot`);
+            if (snapRes.ok) {
+              const snapData = await snapRes.json();
+              if (snapData.history && snapData.history.length > 1) {
+                setHistory(snapData.history.map(s => ({
+                  time: s.time, total: s.total, population: s.population, states: s.states, ...s.population,
+                })));
+              }
             }
+          } catch (_) {}
+          if (d.finished) {
+            setFinished(true);
+            const pop = d.population, tot = d.total || 1;
+            const mat = ['Myeloid','Erythroid','B_cell','T_cell'].reduce((s,ct) => s + (pop[ct]||0), 0);
+            const rec = {
+              session_id, saved_at: new Date().toISOString(),
+              seed: config.seed, t_max: config.t_max, params: config, total: d.total,
+              hsc_pct: ((pop.HSC||0)/tot*100).toFixed(1),
+              mat_pct: (mat/tot*100).toFixed(1),
+              states: d.states,
+            };
+            const upd = [...runHistory, rec]; setRunHistory(upd); saveHistory(upd); break;
           }
-        } catch (_) {}
-
-        if (d.finished) {
-          setFinished(true);
-          const pop = d.population, tot = d.total || 1;
-          const mat = ['Myeloid','Erythroid','B_cell','T_cell'].reduce((s,ct) => s + (pop[ct]||0), 0);
-          const rec = {
-            session_id, saved_at: new Date().toISOString(),
-            seed: config.seed, t_max: config.t_max, params: config, total: d.total,
-            hsc_pct: ((pop.HSC||0)/tot*100).toFixed(1),
-            mat_pct: (mat/tot*100).toFixed(1),
-            states: d.states,
-          };
-          const upd = [...runHistory, rec]; setRunHistory(upd); saveHistory(upd); break;
         }
-      }
-    } catch(e) { setError(String(e)); }
-    finally   { setRunning(false); }
-  }, [basic, adv, runHistory]);
+      } catch(e) { setError(String(e)); }
+      finally   { setRunning(false); }
+
+    } else {
+      // ── Multiple runs (parallel) ────────────────────────────────
+      // seed=0 → unique random seed per run; fixed seed → same for all (deterministic)
+      setRunning(true);
+      try {
+        const seeds = Array.from({ length: numRuns }, () =>
+          config.seed === 0 ? Math.floor(Math.random() * 999998) + 1 : config.seed
+        );
+        const results = await Promise.all(
+          seeds.map(async seed => {
+            const r = await runOneSession(stopRef, config, seed);
+            setMultiDone(n => n + 1);
+            return r;
+          })
+        );
+        setMultiRuns(results);
+        setFinished(true);
+        setProgress(100);
+      } catch(e) { setError(String(e)); }
+      finally   { setRunning(false); }
+    }
+  }, [basic, adv, runHistory, numRuns]);
 
   const stopSim = useCallback(async () => {
     stopRef.current = true; setRunning(false); setFinished(true);
@@ -1021,13 +1212,17 @@ function App() {
         <div className="flex items-center gap-3">
           <img src="./logo.png" alt="Logo" className="w-9 h-9 rounded-md object-contain"/>
           <h1 className="font-bold text-lg tracking-tight">Hematopoiesis Simulator</h1>
-          <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded">v0.12</span>
+          <span className="text-xs text-gray-500 bg-gray-700 px-2 py-0.5 rounded">v0.1.0</span>
         </div>
         <div className="flex items-center gap-4 text-sm">
-          {running && <span className="flex items-center gap-2 text-blue-400">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"/>
-            Running… {progress.toFixed(0)}%
-          </span>}
+          {running && (numRuns > 1
+            ? <span className="flex items-center gap-2 text-blue-400">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"/>
+                Running… {multiDone}/{numRuns} runs</span>
+            : <span className="flex items-center gap-2 text-blue-400">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"/>
+                Running… {progress.toFixed(0)}%</span>
+          )}
           {finished && !running && <span className="text-green-400">✓ Complete</span>}
           <button onClick={() => setShowHelp(true)}
              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium transition-colors cursor-pointer">
@@ -1050,18 +1245,33 @@ function App() {
             />
           </div>
 
+          {/* Number of Runs */}
+          <div className="px-4 py-3 border-t border-gray-700">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-gray-400">Number of Runs</span>
+              <span className="text-sm font-bold text-gray-100">{numRuns}</span>
+            </div>
+            <input type="range" min={1} max={10} step={1} value={numRuns}
+                   onChange={e => { setNumRuns(+e.target.value); setMultiRuns([]); }}
+                   disabled={running} className="w-full"/>
+            {numRuns > 1 && basic.seed !== 0 && (
+              <p className="mt-1.5 text-xs text-yellow-500">⚠ Fixed seed — all runs identical</p>
+            )}
+          </div>
+
           <div className="p-4 border-t border-gray-700 space-y-2 flex-shrink-0">
             {error && (
               <div className="bg-red-900/40 border border-red-700 rounded p-2 text-xs text-red-300">{error}</div>
             )}
             {running && (
               <div className="h-1.5 bg-gray-700 rounded overflow-hidden">
-                <div className="h-full bg-blue-500 rounded transition-all duration-200" style={{width:`${progress}%`}}/>
+                <div className="h-full bg-blue-500 rounded transition-all duration-200"
+                     style={{width: `${numRuns > 1 ? (multiDone / numRuns * 100) : progress}%`}}/>
               </div>
             )}
             <button onClick={startSim} disabled={running}
                     className="w-full py-2 px-4 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-semibold text-sm transition-colors">
-              {running ? '⏳ Running…' : '▶  Start'}
+              {running ? '⏳ Running…' : numRuns > 1 ? `▶  Start (${numRuns} runs)` : '▶  Start'}
             </button>
             <button onClick={stopSim} disabled={!running}
                     className="w-full py-2 px-4 bg-red-700 hover:bg-red-600 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg font-semibold text-sm transition-colors">
@@ -1079,26 +1289,37 @@ function App() {
           <MetricsCards states={current?.states} time={current?.time} total={current?.total}
                         target={basic.enable_target_population ? basic.target_population_size : null}/>
 
-          <div className="bg-gray-800 rounded-xl p-4">
-            <h2 className="text-sm font-semibold text-gray-300 mb-3">Population over Time</h2>
-            <LineChart data={history} lines={lineSpecs}
-                       refLines={basic.enable_target_population
-                         ? [{y: basic.target_population_size,
-                             label: `Target (${basic.target_population_size})`,
-                             color: '#6b7280'}]
-                         : []}/>
-          </div>
+          {multiRuns.length > 0 ? (
+            /* ── Multi-run results ── */
+            <MultiRunPanel
+              runs={multiRuns}
+              target={basic.enable_target_population ? basic.target_population_size : null}
+            />
+          ) : (
+            /* ── Single-run charts ── */
+            <>
+              <div className="bg-gray-800 rounded-xl p-4">
+                <h2 className="text-sm font-semibold text-gray-300 mb-3">Population over Time</h2>
+                <LineChart data={history} lines={lineSpecs}
+                           refLines={basic.enable_target_population
+                             ? [{y: basic.target_population_size,
+                                 label: `Target (${basic.target_population_size})`,
+                                 color: '#6b7280'}]
+                             : []}/>
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-gray-800 rounded-xl p-4">
-              <h2 className="text-sm font-semibold text-gray-300 mb-3">Cell-Type Composition</h2>
-              <StackedAreaChart data={stackData} layers={stackLayers}/>
-            </div>
-            <div className="bg-gray-800 rounded-xl p-4">
-              <h2 className="text-sm font-semibold text-gray-300 mb-3">Current Counts</h2>
-              <PopulationTable population={current?.population} total={current?.total||0}/>
-            </div>
-          </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-gray-800 rounded-xl p-4">
+                  <h2 className="text-sm font-semibold text-gray-300 mb-3">Cell-Type Composition</h2>
+                  <StackedAreaChart data={stackData} layers={stackLayers}/>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-4">
+                  <h2 className="text-sm font-semibold text-gray-300 mb-3">Current Counts</h2>
+                  <PopulationTable population={current?.population} total={current?.total||0}/>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="bg-gray-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
